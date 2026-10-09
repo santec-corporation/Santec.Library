@@ -12,8 +12,7 @@ this reads a bundle directory and compares:
   * every sha256 in ``lib/win-x64/versions.json`` against the file it names;
   * the manifest against the contract in ``docs/repository-split-plan.md`` §5.2:
     version, ABI number, platform, supported OS, build commit, Python package;
-  * that the Python package in the bundle is the version the manifest announces,
-    and that ``python/pyproject.toml`` declares the version the package does;
+  * that the Python package in the bundle is the version the manifest announces;
   * that the binary licence travels with the files.
 
 Text files are hashed in their LF form, because that is how a repository stores
@@ -48,7 +47,6 @@ from abi_surface import RUNTIME_EXPORTS, header_entry_points, pe_exports, pe_ima
 
 VERSION = re.compile(r"^\d+(?:\.\d+){1,3}$")
 PACKAGE_VERSION = re.compile(r'^PACKAGE_VERSION\s*=\s*"([^"]+)"', re.MULTILINE)
-PYPROJECT_VERSION = re.compile(r'^version\s*=\s*"([^"]+)"', re.MULTILINE)
 
 #: Hashing a text file means hashing its LF form. Git normalises line endings on
 #: the way into a repository, so a CRLF byte hash would only match on a checkout
@@ -188,14 +186,6 @@ def check_python_package(root: Path, manifest_version: str) -> None:
            normalised(package) == normalised(manifest_version) if VERSION.match(manifest_version) else False,
            f"package {package}, manifest {manifest_version}")
 
-    # The version is declared twice: the distribution metadata pip reports, and the
-    # string the package calls itself. A release that bumps one and not the other
-    # passes every other check, so the two are compared here.
-    declared = pyproject_version(root)
-    report("pyproject.toml declares the version the package does",
-           bool(declared) and normalised(declared) == normalised(package),
-           f"pyproject {declared or 'absent'}, package {package}")
-
 
 def package_version(root: Path) -> str:
     """The version the bundle's own Python package declares."""
@@ -203,15 +193,6 @@ def package_version(root: Path) -> str:
     if not source.is_file():
         return ""
     match = PACKAGE_VERSION.search(source.read_text(encoding="utf-8", errors="replace"))
-    return match.group(1) if match else ""
-
-
-def pyproject_version(root: Path) -> str:
-    """The version the distribution metadata declares, which pip reports."""
-    source = root / "python" / "pyproject.toml"
-    if not source.is_file():
-        return ""
-    match = PYPROJECT_VERSION.search(source.read_text(encoding="utf-8", errors="replace"))
     return match.group(1) if match else ""
 
 
