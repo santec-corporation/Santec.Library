@@ -6,10 +6,10 @@ when an entry point's signature or behaviour changes.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased], first public release
+## [1.8.0.1] - 2026-10-09
 
-This release is the first published from this repository. It corresponds to the
-library version in `Directory.Build.props` at the time of the split.
+The first published release. `GetLibraryVersion()` reports `1.8.0.1`, and
+`lib/win-x64/versions.json` records the internal commit the binary was built from.
 
 > Upgrading from 1.7.x? [`docs/migration-from-pre-1.8.md`](docs/migration-from-pre-1.8.md)
 > lists every signature and behaviour change with the code change each one needs.
