@@ -34,9 +34,7 @@ from ctypes import (
 )
 from dataclasses import dataclass, field
 
-#: Version of this package. The DLL carries its own version; see
-#: :attr:`Library.version` and :meth:`Library.check_version`.
-PACKAGE_VERSION = "1.8.0.1"
+from ._version import PACKAGE_VERSION
 
 DLL_NAME = "Santec.Library.dll"
 

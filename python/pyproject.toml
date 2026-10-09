@@ -4,9 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "santec-library"
-# Keep in step with the release tag: the release job also stamps the DLL with it,
-# and Library.check_version() warns when the two disagree.
-version = "1.8.0.1"
+# The version is declared once, in santec_library/_version.py, and read from there.
+# That file is the one thing the release pipeline writes inside this package, so the
+# metadata cannot disagree with the DLL or with lib/win-x64/versions.json.
+dynamic = ["version"]
 description = "Python bindings for the Santec.Library instrument SDK (Windows x64)"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
@@ -32,6 +33,9 @@ numpy = ["numpy>=1.24"]
 [project.urls]
 Documentation = "https://github.com/santec-corporation/Santec.Library/tree/main/docs"
 Source = "https://github.com/santec-corporation/Santec.Library"
+
+[tool.setuptools.dynamic]
+version = { attr = "santec_library._version.PACKAGE_VERSION" }
 
 [tool.setuptools.packages.find]
 # The generated bindings live in the vendor namespace "Santec", next to the
