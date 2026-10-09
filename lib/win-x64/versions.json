@@ -1,0 +1,14 @@
+{
+  "version": "1.8.0.1",
+  "abi": 1,
+  "platform": "win-x64",
+  "supportedOs": "Windows 8 or later (x64)",
+  "builtFrom": "66d47867cd081949c6ea0a64de4c5b5a7ab792ae",
+  "pythonPackage": "1.8.0.1",
+  "files": {
+    "lib/win-x64/Santec.Library.dll": "1b0818fd485a6e2b2df44cb197e45325bc42e0f0b27dc6c9b2b0f5bac08fb944",
+    "lib/win-x64/Santec.Library.lib": "a03e7f05d43219e5e30323b0a4fec4f655110cc3997efb4587920edd01d87b72",
+    "include/SantecLibrary.h": "5d91b3a149527121674cc082eef27d37237aad458259f2ef75fb187dab5773ef",
+    "include/SantecLibrary.hpp": "c8a1c7a0b41ac924c4f019f3781ee685596af9f100856c0eb968375666d2206b"
+  }
+}

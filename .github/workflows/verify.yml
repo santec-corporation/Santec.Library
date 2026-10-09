@@ -1,0 +1,97 @@
+name: "Verify the SDK"
+
+# This repository ships binaries it cannot rebuild, so every check compares the
+# committed files with each other. Nothing here compiles the library: the internal
+# repository publishes it, and the release pipeline proves the binary matches the
+# headers before it lands here.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  verify:
+
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: '10'
+
+    # The committed DLL, the headers, the licence and the manifest have to agree,
+    # and the DLL has to be the native x64 build: the managed one has the same file
+    # name and would otherwise be undetectable here.
+    - name: Check the bundle
+      run: python tests/check_bundle.py
+
+    - name: Install the Python package
+      run: python -m pip install "./python[numpy]"
+
+    # The package is this repository's own code, so its own checks run here: it must
+    # import without loading the DLL, honour the documented DLL search order, and
+    # refuse an older library with the entry points it is missing.
+    - name: Check the Python package
+      run: python tests/check_python_package.py
+
+    # The notices are generated in the internal repository and mirrored here. The
+    # markers prove the mirrored copy still carries the linked runtime's own
+    # notices and licence text, which MIT requires to travel with the binary.
+    - name: Check the third-party notices
+      run: |
+        $notices = 'THIRD-PARTY-NOTICES.md'
+        if (-not (Test-Path $notices)) { throw "$notices is missing" }
+        $text = Get-Content $notices -Raw
+        foreach ($marker in 'BEGIN GENERATED RUNTIME NOTICES', 'END GENERATED RUNTIME NOTICES') {
+          if ($text -notmatch $marker) { throw "$notices does not carry the generated runtime notices" }
+        }
+
+    # Loads the DLL from a directory that does not contain it, with no instruments
+    # attached: catches a working-directory-dependent build, a SIMULATION build,
+    # entry points that throw instead of returning their sentinel, and a binary
+    # whose version is not the one the manifest announces.
+    - name: Smoke test the committed DLL
+      run: |
+        $version = (Get-Content lib/win-x64/versions.json | ConvertFrom-Json).version
+        python tests/smoke_test.py --dll lib/win-x64/Santec.Library.dll --expect-version $version
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    # The examples are what most readers copy, so they have to build against the
+    # committed headers and the committed import library.
+    - name: Build the C++ example
+      run: |
+        $project = Get-ChildItem examples/cpp -Recurse -Filter *.vcxproj | Select-Object -First 1
+        if (-not $project) { throw 'no C++ example project under examples/cpp' }
+        msbuild $project.FullName /p:Configuration=Release /p:Platform=x64 /m:1 /nologo
+        if ($LASTEXITCODE -ne 0) { throw 'the C++ example does not build.' }
+
+    - name: Build the C# example
+      run: |
+        dotnet build examples/csharp/Santec.Library.Sample.TSL.Controller.csproj -c Release
+        if ($LASTEXITCODE -ne 0) { throw 'the C# example does not build.' }
+
+    - name: Compile the C header as C17
+      run: |
+        $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+        $vcvars = Join-Path $vs 'VC\Auxiliary\Build\vcvars64.bat'
+        if (-not (Test-Path $vcvars)) { throw "vcvars64.bat not found under '$vs'." }
+        # The header is a C contract as well as a C++ one, and both examples are C++.
+        cmd /c "`"$vcvars`" >nul 2>&1 && cl /nologo /TC /std:c17 /Zs /I include tests\header_c_check.c"
+        if ($LASTEXITCODE -ne 0) { throw 'include/SantecLibrary.h does not compile as C17.' }

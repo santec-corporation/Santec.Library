@@ -1,0 +1,47 @@
+# Byte-compiled files
+__pycache__/
+*.py[cod]
+
+# Distribution / packaging
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+*.egg-info/
+dist/
+build/
+
+# Python virtual environments
+*.egg
+*.whl
+
+# IDE specific
+.idea/
+.vscode/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Pytest
+.cache
+*.cover
+.pytest
+.pytest_cache
+coverage.xml
+*.log
+
+# Other
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.pyc
+*.csv
+*.json
+*.xml
+*.iml
+
+# Sensitive files
+.env

@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security issue
+    url: https://github.com/santec-corporation/Santec.Library/security/advisories/new
+    about: Please report vulnerabilities privately rather than in a public issue.
+  - name: Binary licence
+    url: https://github.com/santec-corporation/Santec.Library/blob/main/lib/win-x64/LICENSE.txt
+    about: Terms that apply to Santec.Library.dll and Santec.Library.lib.

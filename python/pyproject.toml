@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "santec-library"
+# Keep in step with the release tag: the release job also stamps the DLL with it,
+# and Library.check_version() warns when the two disagree.
+version = "1.8.0.1"
+description = "Python bindings for the Santec.Library instrument SDK (Windows x64)"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+keywords = ["santec", "instrument", "tsl", "mpm", "opm", "insertion-loss", "pdl"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+# The generated FlatBuffers bindings import flatbuffers, so reading scan results
+# needs it. Importing santec_library itself does not.
+dependencies = ["flatbuffers>=23.5.26"]
+
+[project.optional-dependencies]
+# The bindings use numpy for the ...AsNumpy() accessors; without it they fall
+# back to per-element access.
+numpy = ["numpy>=1.24"]
+
+[project.urls]
+Documentation = "https://github.com/santec-corporation/Santec.Library/tree/main/docs"
+Source = "https://github.com/santec-corporation/Santec.Library"
+
+[tool.setuptools.packages.find]
+# The generated bindings live in the vendor namespace "Santec", next to the
+# package rather than inside it, which is how the library's own namespaces are
+# laid out.
+include = ["santec_library*", "Santec*"]

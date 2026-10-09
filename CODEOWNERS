@@ -1,0 +1,19 @@
+# Reviewers for the public repository.
+#
+# These are placeholders: GitHub only matches real users or teams, so replace
+# them before the repository is made public, and check that the release bot
+# account actually exists.
+
+# Default: maintainers review everything.
+*                       @santec-corporation/santec-library-maintainers
+
+# Written by the release pipeline. A pull request touching these is almost
+# always a mistake, because the next release overwrites it.
+/lib/                   @santec-corporation/santec-library-maintainers
+/include/               @santec-corporation/santec-library-maintainers
+/docs/abi-reference.md  @santec-corporation/santec-library-maintainers
+
+# Distribution and release configuration.
+/.github/               @santec-corporation/santec-library-maintainers
+/THIRD-PARTY-NOTICES.md @santec-corporation/santec-library-maintainers
+/LICENSE                @santec-corporation/santec-library-maintainers

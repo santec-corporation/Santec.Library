@@ -1,0 +1,19 @@
+# Line endings in this repository are LF, whatever the machine that writes them.
+#
+# The released files are hashed into lib/win-x64/versions.json and verified by
+# tests/check_bundle.py on every push. The manifest hashes text files in their LF
+# form, so a checkout that converted line endings on the way in or out would not
+# change the hash -- but pinning the endings keeps the working tree and the blob
+# identical as well, which is what makes a diff of a released header readable.
+* text=auto eol=lf
+
+# Binaries are never touched. The DLL and its import library are hashed byte for
+# byte, and a single converted byte would break the integrity check.
+*.dll binary
+*.lib binary
+*.pdb binary
+*.png binary
+*.jpg binary
+*.ico binary
+*.pdf binary
+*.zip binary

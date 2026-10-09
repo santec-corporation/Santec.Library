@@ -1,0 +1,80 @@
+name: Bug report
+description: Something in the SDK does not behave as documented.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do **not** report security issues here, see
+        [SECURITY.md](https://github.com/santec-corporation/Santec.Library/blob/main/SECURITY.md).
+
+  - type: input
+    id: version
+    attributes:
+      label: Library version
+      description: The output of `GetLibraryVersion()`, or the version in `lib/win-x64/versions.json`.
+      placeholder: "1.8.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: language
+    attributes:
+      label: How are you calling the library?
+      options:
+        - C
+        - C++
+        - .NET
+        - Python
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: instruments
+    attributes:
+      label: Instruments and drivers
+      description: >
+        Which instruments (model), how they are connected (GPIB, USB, Ethernet),
+        and which drivers are installed (NI-VISA, NI-DAQmx, Keysight VISA, FTDI).
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+      description: >
+        Include the value the call returned, `false`, `0`, `NaN` or a null
+        pointer, because failures are reported through sentinels rather than
+        exceptions.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: How to reproduce
+      description: The smallest script or snippet that shows the problem.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Log excerpt
+      description: >
+        From `%APPDATA%\Santec\SantecLibrary\logs`, after calling
+        `EnableDebug()`. This is where the library records why a call failed.
+      render: text
+    validations:
+      required: false

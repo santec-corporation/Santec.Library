@@ -1,0 +1,36 @@
+# The published artefacts in lib/ and include/ are committed deliberately: they are
+# the distribution. Everything else that is generated stays out of the repository.
+
+# Build output
+bin/
+obj/
+aot/
+x64/
+*.pdb
+*.lib
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Artefacts the Python examples write while they run
+ILReferenceData*.csv
+ILMeasurementData*.csv
+scan_parameters.json
+tsl_parameters.json
+
+# Editors and tools
+.vs/
+.vscode/
+.idea/
+*.user
+CLAUDE.md
+
+# The import library is part of the distribution and must stay committed. This exception
+# goes last on purpose: git applies the last matching pattern, so written above "*.lib"
+# it is overridden by it and the file is dropped by git add without a word.
+!lib/win-x64/Santec.Library.lib
