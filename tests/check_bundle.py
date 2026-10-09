@@ -10,9 +10,11 @@ this reads a bundle directory and compares:
   * the DLL's export table against the function declarations in
     ``include/SantecLibrary.h``;
   * every sha256 in ``lib/win-x64/versions.json`` against the file it names;
-  * the manifest against the contract in ``docs/repository-split-plan.md`` §5.2:
+  * the manifest against the fields it promises:
     version, ABI number, platform, supported OS, build commit, Python package;
-  * that the Python package in the bundle is the version the manifest announces;
+  * that the Python package in the bundle is the version the manifest announces,
+    and that ``python/pyproject.toml`` takes its version from the package rather
+    than declaring one of its own;
   * that the binary licence travels with the files.
 
 Text files are hashed in their LF form, because that is how a repository stores
@@ -47,6 +49,8 @@ from abi_surface import RUNTIME_EXPORTS, header_entry_points, pe_exports, pe_ima
 
 VERSION = re.compile(r"^\d+(?:\.\d+){1,3}$")
 PACKAGE_VERSION = re.compile(r'^PACKAGE_VERSION\s*=\s*"([^"]+)"', re.MULTILINE)
+PYPROJECT_DYNAMIC = re.compile(r'^\s*dynamic\s*=\s*\[\s*"version"\s*\]', re.MULTILINE)
+PYPROJECT_VERSION = re.compile(r'^version\s*=\s*"([^"]+)"', re.MULTILINE)
 
 #: Hashing a text file means hashing its LF form. Git normalises line endings on
 #: the way into a repository, so a CRLF byte hash would only match on a checkout
@@ -179,20 +183,41 @@ def check_manifest(root: Path) -> tuple[str, str]:
 def check_python_package(root: Path, manifest_version: str) -> None:
     package = package_version(root)
     if not package:
-        report("the bundle carries the Python package", False, f"not found: {root / 'python' / 'santec_library' / 'library.py'}")
+        report("the bundle carries the Python package", False,
+               f"not found: {root / 'python' / 'santec_library' / '_version.py'}")
         return
 
     report("the Python package is the announced version",
            normalised(package) == normalised(manifest_version) if VERSION.match(manifest_version) else False,
            f"package {package}, manifest {manifest_version}")
 
+    # One declaration: the distribution metadata takes its version from the package,
+    # so the two cannot drift. A literal here would shadow the version the release
+    # job writes, which is the state this check exists to catch.
+    metadata = pyproject_version(root)
+    dynamic = bool(PYPROJECT_DYNAMIC.search(pyproject_text(root)))
+    report("pyproject.toml takes its version from the package",
+           dynamic and not metadata,
+           f"dynamic {dynamic}, literal {metadata or 'none'}")
+
 
 def package_version(root: Path) -> str:
     """The version the bundle's own Python package declares."""
-    source = root / "python" / "santec_library" / "library.py"
+    source = root / "python" / "santec_library" / "_version.py"
     if not source.is_file():
         return ""
     match = PACKAGE_VERSION.search(source.read_text(encoding="utf-8", errors="replace"))
+    return match.group(1) if match else ""
+
+
+def pyproject_text(root: Path) -> str:
+    source = root / "python" / "pyproject.toml"
+    return source.read_text(encoding="utf-8", errors="replace") if source.is_file() else ""
+
+
+def pyproject_version(root: Path) -> str:
+    """The version pyproject.toml declares as a literal, if it declares one."""
+    match = PYPROJECT_VERSION.search(pyproject_text(root))
     return match.group(1) if match else ""
 
 
@@ -209,7 +234,7 @@ def write_manifest(root: Path, version: str, built_from: str) -> int:
 
     package = package_version(root)
     if not package:
-        print(f"cannot describe the bundle: {root / 'python' / 'santec_library' / 'library.py'} "
+        print(f"cannot describe the bundle: {root / 'python' / 'santec_library' / '_version.py'} "
               "is missing, so the Python package version is unknown")
         return 1
 
