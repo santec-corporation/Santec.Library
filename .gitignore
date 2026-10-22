@@ -9,6 +9,9 @@ x64/
 *.pdb
 *.lib
 
+# The example archives tools/package_examples.py writes
+dist/
+
 # Python
 __pycache__/
 *.py[cod]

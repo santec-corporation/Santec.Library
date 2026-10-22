@@ -1,0 +1,69 @@
+name: "Release the examples"
+
+# The internal repository mirrors a release here and pushes its tag. This
+# workflow turns that tag into a GitHub release whose assets are one archive per
+# example, so a reader downloads just the sample they want instead of the whole
+# repository. The tag push is the normal path; workflow_dispatch rebuilds the
+# assets of a tag that is already here (the mirror does not push a tag twice).
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish, e.g. v1.8.0.2'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+
+    - name: Setup Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+
+    # On a tag push the tag is the release. A dispatch names it, and the tree it
+    # checks out has to be that release: the manifest version names the archives,
+    # so a mismatch would publish one version's files under another version's tag.
+    - name: Resolve the version
+      id: version
+      run: |
+        $tag = if ('${{ github.ref_type }}' -eq 'tag') { '${{ github.ref_name }}' } else { '${{ inputs.tag }}' }
+        if (-not $tag) { throw 'No tag: run this workflow from a tag, or pass the tag input.' }
+        if ($tag -notmatch '^v\d+(\.\d+){1,3}$') { throw "Not a release tag: $tag" }
+        $version = $tag -replace '^v'
+        $manifest = (Get-Content lib/win-x64/versions.json -Raw | ConvertFrom-Json).version
+        if ($manifest -ne $version) { throw "the checkout carries $manifest, not $version; check out the release tag." }
+        "tag=$tag" >> $env:GITHUB_OUTPUT
+        "version=$version" >> $env:GITHUB_OUTPUT
+
+    - name: Package the examples
+      run: |
+        python tools/package_examples.py --version ${{ steps.version.outputs.version }} --output dist
+        if (-not (Get-ChildItem dist -Filter *.zip)) { throw 'no archives were written' }
+
+    # One archive per example, named Santec.Library-<version>-<example>.zip. The
+    # release is created on the first run and its assets replaced on a re-run.
+    - name: Publish the release
+      uses: softprops/action-gh-release@v3
+      with:
+        name: Santec.Library ${{ steps.version.outputs.version }}
+        tag_name: ${{ steps.version.outputs.tag }}
+        target_commitish: ${{ github.sha }}
+        generate_release_notes: true
+        files: dist/*.zip
