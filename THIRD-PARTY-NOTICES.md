@@ -132,7 +132,7 @@ declares. `Licence text` names the file embedded below, if that package ships on
 | `IviFoundation.Visa` | 8.0.2 | transitive | see license\license.txt | license file in the package | none |
 | `KeysightTechnologies.Visa` | 18.6.6 | transitive | see license.txt | license file in the package | `LICENSE.TXT` |
 | `MathNet.Numerics` | 6.0.0-beta2 | transitive | MIT | license expression | none |
-| `Microsoft.DotNet.ILCompiler` | 10.0.13 | direct | MIT | license expression | none |
+| `Microsoft.DotNet.ILCompiler` | 10.0.14 | direct | MIT | license expression | none |
 | `Microsoft.Extensions.DependencyInjection.Abstractions` | 10.0.0 | transitive | MIT | license expression | none |
 | `Microsoft.Extensions.DependencyInjection` | 10.0.0 | transitive | MIT | license expression | none |
 | `Microsoft.Extensions.Logging.Abstractions` | 10.0.0 | transitive | MIT | license expression | none |
@@ -140,10 +140,10 @@ declares. `Licence text` names the file embedded below, if that package ships on
 | `Microsoft.Extensions.ObjectPool` | 10.0.13 | transitive | MIT | license expression | none |
 | `Microsoft.Extensions.Options` | 10.0.0 | transitive | MIT | license expression | none |
 | `Microsoft.Extensions.Primitives` | 10.0.0 | transitive | MIT | license expression | none |
-| `Microsoft.NET.ILLink.Tasks` | 10.0.13 | direct | MIT | license expression | none |
+| `Microsoft.NET.ILLink.Tasks` | 10.0.14 | direct | MIT | license expression | none |
 | `NationalInstruments.Visa` | 25.5.0.13 | transitive | MIT | license expression | none |
 | `QuickTickLib` | 3.0.0 | transitive | MIT | license expression | none |
-| `runtime.win-x64.Microsoft.DotNet.ILCompiler` | 10.0.13 | transitive | MIT | license expression | none |
+| `runtime.win-x64.Microsoft.DotNet.ILCompiler` | 10.0.14 | transitive | MIT | license expression | none |
 | `Serilog.Enrichers.Environment` | 3.0.1 | transitive | Apache-2.0 | license expression | none |
 | `Serilog.Enrichers.Process` | 3.0.0 | transitive | Apache-2.0 | license expression | none |
 | `Serilog.Extensions.Logging` | 10.0.0 | transitive | Apache-2.0 | license expression | none |
@@ -163,9 +163,9 @@ Apache-2.0; both texts are included below.
 
 Component | Version | Licence | Notices included
 |---|---|---|---|
-| `Microsoft.DotNet.ILCompiler` | 10.0.13 | MIT | `THIRD-PARTY-NOTICES.TXT` |
+| `Microsoft.DotNet.ILCompiler` | 10.0.14 | MIT | `THIRD-PARTY-NOTICES.TXT` |
 | `YY-Thunks` | 1.2.3 | MIT | none |
-| `microsoft.netcore.app.runtime.nativeaot.win-x64` | 10.0.13 | MIT | `LICENSE.TXT`, `THIRD-PARTY-NOTICES.TXT` |
+| `microsoft.netcore.app.runtime.nativeaot.win-x64` | 10.0.14 | MIT | `LICENSE.TXT`, `THIRD-PARTY-NOTICES.TXT` |
 
 ### 6.3 Recorded hashes
 
@@ -175,9 +175,9 @@ stale notices.
 
 | Package | File | sha256 |
 |---|---|---|
-| `Microsoft.DotNet.ILCompiler` 10.0.13 | `THIRD-PARTY-NOTICES.TXT` | `6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21` |
-| `microsoft.netcore.app.runtime.nativeaot.win-x64` 10.0.13 | `LICENSE.TXT` | `d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b` |
-| `microsoft.netcore.app.runtime.nativeaot.win-x64` 10.0.13 | `THIRD-PARTY-NOTICES.TXT` | `6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21` |
+| `Microsoft.DotNet.ILCompiler` 10.0.14 | `THIRD-PARTY-NOTICES.TXT` | `6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21` |
+| `microsoft.netcore.app.runtime.nativeaot.win-x64` 10.0.14 | `LICENSE.TXT` | `d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b` |
+| `microsoft.netcore.app.runtime.nativeaot.win-x64` 10.0.14 | `THIRD-PARTY-NOTICES.TXT` | `6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21` |
 | `CommunityToolkit.HighPerformance` 8.4.2 | `LICENSE.md` | `651997ef19dbb9ecb8dd660dbc86444a65af21f18cfe08daa69bf201cd5cfdfc` |
 | `KeysightTechnologies.Visa` 18.6.6 | `LICENSE.TXT` | `cfcd053c7ec4682e35d79d7769d561445ce85cd3e28a8227ee2583b9318237ae` |
 

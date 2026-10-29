@@ -56,7 +56,7 @@ PYPROJECT_VERSION = re.compile(r'^version\s*=\s*"([^"]+)"', re.MULTILINE)
 #: the way into a repository, so a CRLF byte hash would only match on a checkout
 #: that happens to use CRLF. A release should not depend on the machine that
 #: verifies it. Binaries are hashed byte for byte.
-TEXT_SUFFIXES = {".h", ".hpp", ".py", ".pyi", ".md", ".txt", ".json", ".toml", ".yml", ".yaml"}
+TEXT_SUFFIXES = {".c", ".h", ".hpp", ".py", ".pyi", ".md", ".txt", ".json", ".toml", ".yml", ".yaml"}
 
 #: The manifest fields that are not derived from the files.
 MANIFEST_CONSTANTS = {"abi": 1, "platform": "win-x64", "supportedOs": "Windows 8 or later (x64)"}

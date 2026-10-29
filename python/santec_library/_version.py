@@ -8,4 +8,4 @@ The value committed in the repository is the last released version. It matters o
 to a local ``pip install ./python``, because a release overwrites it on the way past.
 """
 
-PACKAGE_VERSION = "1.8.0.2"
+PACKAGE_VERSION = "1.8.0.3"
