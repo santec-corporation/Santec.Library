@@ -178,16 +178,18 @@ void FreeConnectionConfigs(ConnectionConfig* devices, int32_t count);
 bool SetConnection(const ConnectionConfig* devPtr);
 
 /**
- * Connects to a TSL, Power Meter, and optionally a DAQ device.
+ * Connects to a TSL, Power Meter, and optionally a PCU and a DAQ device.
  *
- * When @p spuPtr is nullptr, only the TSL and Power Meter connections are made.
+ * When @p pcuPtr is nullptr, polarization-dependent-loss operations stay disabled.
+ * When @p spuPtr is nullptr, no DAQ connection is made.
  *
  * @param tslPtr  ConnectionConfig for the TSL device.
  * @param mpmPtr  ConnectionConfig for the Power Meter.
+ * @param pcuPtr  ConnectionConfig for the polarization controller, or nullptr.
  * @param spuPtr  ConnectionConfig for the DAQ device, or nullptr.
  * @return        true when all required connections succeed.
  */
-bool SetConnections(const ConnectionConfig* tslPtr, const ConnectionConfig* mpmPtr, const ConnectionConfig* spuPtr);
+bool SetConnections(const ConnectionConfig* tslPtr, const ConnectionConfig* mpmPtr, const ConnectionConfig* pcuPtr, const ConnectionConfig* spuPtr);
 
 /**
  * Disconnects and releases all resources.
@@ -977,13 +979,23 @@ void GetTSLSystemError();
 
 /**
  * Reads the logging data as floats.
+ *
+ * The buffer is allocated by the library. Release it with FreeArrayData().
+ *
+ * @param data    Receives the buffer, or nullptr when the TSL is not connected.
+ * @param length  Receives the entry count of @p data, or 0.
  */
-void GetTSLLoggingDataF();
+void GetTSLLoggingDataF(float** data, int32_t* length);
 
 /**
  * Reads the logging data.
+ *
+ * The buffer is allocated by the library. Release it with FreeArrayData().
+ *
+ * @param data    Receives the buffer, or nullptr when the TSL is not connected.
+ * @param length  Receives the entry count of @p data, or 0.
  */
-void GetTSLLoggingData();
+void GetTSLLoggingData(double** data, int32_t* length);
 
 /**
  * Reads the product type.
@@ -1005,13 +1017,23 @@ int32_t GetTSLModel();
 
 /**
  * Reads the power logging data as floats (TSL2).
+ *
+ * The buffer is allocated by the library. Release it with FreeArrayData().
+ *
+ * @param data    Receives the buffer, or nullptr when TSL2 is not connected.
+ * @param length  Receives the entry count of @p data, or 0.
  */
-void GetTSL2PowerLoggingDataF();
+void GetTSL2PowerLoggingDataF(float** data, int32_t* length);
 
 /**
  * Reads the power logging data (TSL2).
+ *
+ * The buffer is allocated by the library. Release it with FreeArrayData().
+ *
+ * @param data    Receives the buffer, or nullptr when TSL2 is not connected.
+ * @param length  Receives the entry count of @p data, or 0.
  */
-void GetTSL2PowerLoggingData();
+void GetTSL2PowerLoggingData(double** data, int32_t* length);
 
 /**
  * Reads the trigger output source (TSL2).

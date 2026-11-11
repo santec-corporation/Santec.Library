@@ -128,7 +128,7 @@ class Library:
         "GetDevices": ([c_void_p, c_int], c_int),
         "FreeConnectionConfigs": ([c_void_p, c_int], None),
         "SetConnection": ([c_void_p], c_bool),
-        "SetConnections": ([c_void_p, c_void_p, c_void_p], c_bool),
+        "SetConnections": ([c_void_p, c_void_p, c_void_p, c_void_p], c_bool),
         "Disconnect": ([], None),
         "EnableDebug": ([], None),
         "EnableVerbose": ([], None),
@@ -183,8 +183,10 @@ class Library:
         """Connect the TSL and the power meter.
 
         The structs are passed by address: the DLL expects ``ConnectionConfig*``.
+        A null polarization controller leaves PDL disabled, and a null DAQ
+        configuration makes no DAQ connection.
         """
-        return bool(self._dll.SetConnections(byref(tsl.config), byref(pm.config), None))
+        return bool(self._dll.SetConnections(byref(tsl.config), byref(pm.config), None, None))
 
     def disconnect(self) -> None:
         # Release the strings the library wrote into the device buffer before

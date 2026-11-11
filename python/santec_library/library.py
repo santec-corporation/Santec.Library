@@ -141,7 +141,7 @@ class Library:
         "GetDevices": ([c_void_p, c_int], c_int),
         "FreeConnectionConfigs": ([c_void_p, c_int], None),
         "SetConnection": ([c_void_p], c_bool),
-        "SetConnections": ([c_void_p, c_void_p, c_void_p], c_bool),
+        "SetConnections": ([c_void_p, c_void_p, c_void_p, c_void_p], c_bool),
         "Disconnect": ([], None),
         "EnableDebug": ([], None),
         "EnableVerbose": ([], None),
@@ -345,12 +345,13 @@ class Library:
         """Connect a single device, without starting a sweep pipeline."""
         return bool(self._dll.SetConnection(byref(device.config)))
 
-    def set_connections(self, tsl: Device, power_meter: Device, spu: Device | None = None) -> bool:
-        """Connect the TSL and the power meter, plus an optional DAQ device."""
+    def set_connections(self, tsl: Device, power_meter: Device, pcu: Device | None = None, spu: Device | None = None) -> bool:
+        """Connect the TSL, the power meter and the PCU, plus an optional DAQ device."""
         return bool(
             self._dll.SetConnections(
                 byref(tsl.config),
                 byref(power_meter.config),
+                byref(pcu.config) if pcu is not None else None,
                 byref(spu.config) if spu is not None else None,
             )
         )

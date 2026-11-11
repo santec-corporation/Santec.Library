@@ -1,14 +1,14 @@
 {
-  "version": "1.8.0.6",
-  "abi": 1,
+  "version": "1.8.0.7",
+  "abi": 2,
   "platform": "win-x64",
   "supportedOs": "Windows 8 or later (x64)",
-  "builtFrom": "b9ddc87f6afb2a1be35b17c06f3ab2fab8270061",
-  "pythonPackage": "1.8.0.6",
+  "builtFrom": "93a12ca630667c4059154947c65432ad444a5e85",
+  "pythonPackage": "1.8.0.7",
   "files": {
-    "lib/win-x64/Santec.Library.dll": "cb6684e0e5ccd9dcd218a48c693c7be534059dbf436011509cbca1bb5c67145a",
+    "lib/win-x64/Santec.Library.dll": "63fc6df8ba12007cf0fc68a209f956856a622c6a2c4f77a25782fc9b7c7a6646",
     "lib/win-x64/Santec.Library.lib": "a03e7f05d43219e5e30323b0a4fec4f655110cc3997efb4587920edd01d87b72",
-    "include/SantecLibrary.h": "5d91b3a149527121674cc082eef27d37237aad458259f2ef75fb187dab5773ef",
-    "include/SantecLibrary.hpp": "c8a1c7a0b41ac924c4f019f3781ee685596af9f100856c0eb968375666d2206b"
+    "include/SantecLibrary.h": "4d514a5cca1efa0c0df45f6ee3eca09ed09e33122c32d57b2fec4e41dc6373a4",
+    "include/SantecLibrary.hpp": "cfa81cf0fa11e053f2c6483aaf34318a3509548dcde9e3f5b2ca26731a0ddb66"
   }
 }

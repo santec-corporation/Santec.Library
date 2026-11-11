@@ -58,8 +58,10 @@ PYPROJECT_VERSION = re.compile(r'^version\s*=\s*"([^"]+)"', re.MULTILINE)
 #: verifies it. Binaries are hashed byte for byte.
 TEXT_SUFFIXES = {".c", ".h", ".hpp", ".py", ".pyi", ".md", ".txt", ".json", ".toml", ".yml", ".yaml"}
 
-#: The manifest fields that are not derived from the files.
-MANIFEST_CONSTANTS = {"abi": 1, "platform": "win-x64", "supportedOs": "Windows 8 or later (x64)"}
+#: The manifest fields that are not derived from the files. The ABI number moves
+#: when an entry point's signature or behaviour changes: 2 because SetConnections()
+#: takes the polarization controller, which is a different argument list.
+MANIFEST_CONSTANTS = {"abi": 2, "platform": "win-x64", "supportedOs": "Windows 8 or later (x64)"}
 
 #: What a bundle must contain, relative to its root.
 REQUIRED = [

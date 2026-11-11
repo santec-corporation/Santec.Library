@@ -977,18 +977,28 @@ Reads the system error state.
 ### `GetTSLLoggingDataF`
 
 ```c
-void GetTSLLoggingDataF(void);
+void GetTSLLoggingDataF(float** data, int32_t* length);
 ```
 
-Reads the logging data as floats.
+Reads the logging data as floats. The buffer is allocated by the library. Release it with FreeArrayData().
+
+| Parameter | Meaning |
+|---|---|
+| `data` | Receives the buffer, or NULL when the TSL is not connected. |
+| `length` | Receives the entry count of `data`, or 0. |
 
 ### `GetTSLLoggingData`
 
 ```c
-void GetTSLLoggingData(void);
+void GetTSLLoggingData(double** data, int32_t* length);
 ```
 
-Reads the logging data.
+Reads the logging data. The buffer is allocated by the library. Release it with FreeArrayData().
+
+| Parameter | Meaning |
+|---|---|
+| `data` | Receives the buffer, or NULL when the TSL is not connected. |
+| `length` | Receives the entry count of `data`, or 0. |
 
 ### `GetTSLProductType`
 
@@ -1249,18 +1259,28 @@ Stops the sweep (TSL2).
 ### `GetTSL2PowerLoggingDataF`
 
 ```c
-void GetTSL2PowerLoggingDataF(void);
+void GetTSL2PowerLoggingDataF(float** data, int32_t* length);
 ```
 
-Reads the power logging data as floats (TSL2).
+Reads the power logging data as floats (TSL2). The buffer is allocated by the library. Release it with FreeArrayData().
+
+| Parameter | Meaning |
+|---|---|
+| `data` | Receives the buffer, or NULL when TSL2 is not connected. |
+| `length` | Receives the entry count of `data`, or 0. |
 
 ### `GetTSL2PowerLoggingData`
 
 ```c
-void GetTSL2PowerLoggingData(void);
+void GetTSL2PowerLoggingData(double** data, int32_t* length);
 ```
 
-Reads the power logging data (TSL2).
+Reads the power logging data (TSL2). The buffer is allocated by the library. Release it with FreeArrayData().
+
+| Parameter | Meaning |
+|---|---|
+| `data` | Receives the buffer, or NULL when TSL2 is not connected. |
+| `length` | Receives the entry count of `data`, or 0. |
 
 ### `GetTSL2TriggerOutputSource`
 
@@ -2130,15 +2150,16 @@ Connects to a device.
 ### `SetConnections`
 
 ```c
-bool SetConnections(void* tslPtr, void* mpmPtr, void* spuPtr);
+bool SetConnections(void* tslPtr, void* mpmPtr, void* pcuPtr, void* spuPtr);
 ```
 
-Connects to a TSL, Power Meter, and optionally a DAQ device. When `spuPtr` is NULL, only the TSL and Power Meter connections are made.
+Connects to a TSL, Power Meter, and optionally a PCU and a DAQ device. When `pcuPtr` is NULL, polarization-dependent-loss operations stay disabled. When `spuPtr` is NULL, no DAQ connection is made.
 
 | Parameter | Meaning |
 |---|---|
 | `tslPtr` | ConnectionConfig for the TSL device. |
 | `mpmPtr` | ConnectionConfig for the Power Meter. |
+| `pcuPtr` | ConnectionConfig for the polarization controller, or NULL. |
 | `spuPtr` | ConnectionConfig for the DAQ device, or NULL. |
 
 **Returns** true when all required connections succeed.
@@ -2205,6 +2226,10 @@ Returns the library version as a UTF-8 string. Lets a caller identify the binary
 | `ReferenceScan` | `FreeArrayData` |
 | `MeasurementScan` | `FreeArrayData` |
 | `ValidateParameters` | `FreeString` |
+| `GetTSLLoggingDataF` | `FreeArrayData` |
+| `GetTSLLoggingData` | `FreeArrayData` |
+| `GetTSL2PowerLoggingDataF` | `FreeArrayData` |
+| `GetTSL2PowerLoggingData` | `FreeArrayData` |
 | `GetMPMModulePower` | `FreeArrayData` |
 | `GetMPMInfo` | `FreeArrayData` |
 | `ReadOPMAllChannels` | `FreeAllChannelsRead` |

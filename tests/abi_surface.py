@@ -31,6 +31,9 @@ HEADER_DECL = re.compile(
     re.MULTILINE,
 )
 
+# An exported managed method, named by the attribute that exports it.
+ATTRIBUTE = re.compile(r'\[UnmanagedCallersOnly\(EntryPoint\s*=\s*"([A-Za-z0-9_]+)"\)\]')
+
 # Symbols the NativeAOT toolchain adds to every native library. They are not part
 # of our contract, so an "extra export" report has to ignore them.
 RUNTIME_EXPORTS = {"DotNetRuntimeDebugHeader"}
@@ -51,6 +54,66 @@ def header_entry_points(header: Path) -> set[str]:
     because the pattern requires a return type at the start of the line.
     """
     return set(HEADER_DECL.findall(header.read_text(encoding="utf-8", errors="replace")))
+
+
+def parenthesised(text: str, opening: int) -> str:
+    """The text between the parenthesis at ``opening`` and the one that closes it."""
+    depth = 0
+    for index in range(opening, len(text)):
+        if text[index] == "(":
+            depth += 1
+        elif text[index] == ")":
+            depth -= 1
+            if depth == 0:
+                return text[opening + 1:index]
+    fail("a declaration has unbalanced parentheses")
+
+
+def parameter_count(arguments: str) -> int:
+    """How many parameters one parameter list declares."""
+    text = arguments.strip()
+    if not text or text == "void":
+        return 0
+    depth = 0
+    count = 1
+    for character in text:
+        if character in "([{":
+            depth += 1
+        elif character in ")]}":
+            depth -= 1
+        elif character == "," and depth == 0:
+            count += 1
+    return count
+
+
+def header_arities(header: Path) -> dict[str, int]:
+    """The parameter count every declaration in a C header states.
+
+    Two declarations of one name must agree: a header that states both cannot tell a
+    caller which one the binary implements.
+    """
+    text = header.read_text(encoding="utf-8", errors="replace")
+    arities: dict[str, int] = {}
+    for match in HEADER_DECL.finditer(text):
+        name = match.group(1)
+        count = parameter_count(parenthesised(text, match.end() - 1))
+        if name in arities and arities[name] != count:
+            fail(f"{header.name} declares {name} with {arities[name]} and {count} parameters")
+        arities[name] = count
+    return arities
+
+
+def managed_arities(*sources: Path) -> dict[str, int]:
+    """The parameter count every ``[UnmanagedCallersOnly]`` method declares."""
+    arities: dict[str, int] = {}
+    for source in sources:
+        text = source.read_text(encoding="utf-8", errors="replace")
+        for match in ATTRIBUTE.finditer(text):
+            opening = text.find("(", match.end())
+            if opening < 0:
+                fail(f"{source.name}: {match.group(1)} has no parameter list")
+            arities[match.group(1)] = parameter_count(parenthesised(text, opening))
+    return arities
 
 
 def pe_layout(data: bytes, path: Path) -> tuple[int, int, int, int]:
