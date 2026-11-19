@@ -221,12 +221,35 @@ void EnableHighResolution();
  * @param startWavelength  Start wavelength (nm).
  * @param stopWavelength   Stop wavelength (nm).
  * @param stepWidth        Wavelength step (nm).
- * @param power            Optical power (mW).
+ * @param power            Optical power level (dBm).
  * @param speed            Sweep speed (nm/s).
  * @param cycles           Number of sweep cycles.
  * @param delay            Inter-cycle delay (ms).
  */
 void SetSweepParameters(double startWavelength, double stopWavelength, double stepWidth, double power, double speed, int32_t cycles, int32_t delay);
+
+/**
+ * Sets how far below the sweep power the reference scan runs.
+ *
+ * The reference path usually has less loss than the path through the device
+ * under test, so a sweep power that is safe for the DUT can overload the power
+ * meter while the reference runs. The library lowers the laser for the
+ * reference scan, restores the sweep power for the DUT scans, and accounts for
+ * the offset in the insertion loss it reports.
+ *
+ * A zero offset, the default after ResetParameters(), leaves both scans at the
+ * sweep power. The offset needs a finite sweep power and automatic power mode,
+ * which this library always uses. ValidateParameters() reports a negative or
+ * non-finite value rather than this function clamping it.
+ *
+ * The library lowers the reference scan alone with an MPM or a DAQ monitor.
+ * With an OPM-200 or an Agilent LMS it runs both scans at the lower power,
+ * which leaves the insertion loss unchanged, and in a PDL scan it applies the
+ * offset only when the sweep power exceeds the MPM input rating.
+ *
+ * @param offset  Offset below the sweep power (dB), zero or positive.
+ */
+void SetReferenceOffset(double offset);
 
 /**
  * Sets the range profile for an MPM channel.
@@ -1011,6 +1034,169 @@ int32_t GetTSLProductType();
  */
 int32_t GetTSLModel();
 
+/**
+ * Waits until the sweep reaches one of the given statuses.
+ *
+ * @param waitTime  Milliseconds to wait before giving up.
+ * @param status    Status to wait for.
+ * @param notEqual  Non-zero to wait until the status is anything but @p status.
+ * @return          1 when the status was reached, 0 on timeout or when no device is connected.
+ */
+int32_t WaitTSLForSweepStatus(int32_t waitTime, int32_t status, int32_t notEqual);
+
+/**
+ * Reads whether the instrument understands the LLP command set.
+ *
+ * @return  1 if LLP compatible, 0 otherwise or when no device is connected.
+ */
+int32_t GetTSLIsLLPCompatible();
+
+/**
+ * Reads the active command format.
+ *
+ * @return  Command format enum value, or 0 if no device is connected.
+ */
+int32_t GetTSLCommandFormat();
+
+// -------------------------------------------------------------------------
+// TSL2 - Laser Source
+//
+// TSL2 inherits the laser-source and sweepable-laser-source contracts, so these
+// duplicate the TSL entry points above for a connection that reports TSL2.
+// -------------------------------------------------------------------------
+
+/**
+ * Reads the wavelength (TSL2).
+ *
+ * @return  Wavelength in nanometers, or NaN if no device is connected.
+ */
+double GetTSL2Wavelength();
+
+/**
+ * Sets the wavelength (TSL2).
+ *
+ * @param value  Wavelength in nanometers.
+ */
+void SetTSL2Wavelength(double value);
+
+/**
+ * Reads the optical frequency (TSL2).
+ *
+ * @return  Frequency in terahertz, or NaN if no device is connected.
+ */
+double GetTSL2Frequency();
+
+/**
+ * Sets the optical frequency (TSL2).
+ *
+ * @param value  Frequency in terahertz.
+ */
+void SetTSL2Frequency(double value);
+
+/**
+ * Reads the output power (TSL2).
+ *
+ * @return  Power in mW or dBm depending on the power mode, or NaN if no device is connected.
+ */
+double GetTSL2Power();
+
+/**
+ * Sets the output power (TSL2).
+ *
+ * @param value  Power in mW or dBm depending on the power mode.
+ */
+void SetTSL2Power(double value);
+
+/**
+ * Reads the power unit (TSL2).
+ *
+ * @return  Power unit enum value, or 0 if no device is connected.
+ */
+int32_t GetTSL2PowerUnit();
+
+/**
+ * Sets the power unit (TSL2).
+ *
+ * @param value  Power unit enum value.
+ */
+void SetTSL2PowerUnit(int32_t value);
+
+/**
+ * Reads the laser diode status (TSL2).
+ *
+ * @return  LD status enum value, or 0 if no device is connected.
+ */
+int32_t GetTSL2LDStatus();
+
+/**
+ * Sets the laser diode status (TSL2).
+ *
+ * @param value  LD status enum value.
+ */
+void SetTSL2LDStatus(int32_t value);
+
+/**
+ * Reads whether the instrument understands the LLP command set (TSL2).
+ *
+ * @return  1 if LLP compatible, 0 otherwise or when no device is connected.
+ */
+int32_t GetTSL2IsLLPCompatible();
+
+/**
+ * Reads the active command format (TSL2).
+ *
+ * @return  Command format enum value, or 0 if no device is connected.
+ */
+int32_t GetTSL2CommandFormat();
+
+/**
+ * Reads the sweep speed (TSL2).
+ *
+ * @return  Sweep speed in nanometers per second, or NaN if no device is connected.
+ */
+double GetTSL2SweepSpeed();
+
+/**
+ * Sets the sweep speed (TSL2).
+ *
+ * @param value  Sweep speed in nanometers per second.
+ */
+void SetTSL2SweepSpeed(double value);
+
+/**
+ * Reads the sweep mode (TSL2).
+ *
+ * @return  Sweep mode enum value, or 0 if no device is connected.
+ */
+int32_t GetTSL2SweepMode();
+
+/**
+ * Sets the sweep mode (TSL2).
+ *
+ * @param value  Sweep mode enum value.
+ */
+void SetTSL2SweepMode(int32_t value);
+
+/**
+ * Reads the sweep status (TSL2).
+ *
+ * @return  Sweep status enum value, or 0 if no device is connected.
+ */
+int32_t GetTSL2SweepStatus();
+
+/**
+ * Starts a sweep (TSL2).
+ *
+ * A TSL2 device cannot pause or restart a sweep. PauseTSLSweep and
+ * RestartTSLSweep are prohibited on ITSL2 and have no TSL2 counterpart.
+ */
+void StartTSL2Sweep();
+
+/**
+ * Stops the sweep (TSL2).
+ */
+void StopTSL2Sweep();
+
 // -------------------------------------------------------------------------
 // TSL2 - Advanced Control
 // -------------------------------------------------------------------------
@@ -1316,9 +1502,10 @@ uint8_t GetOPMAveraging(const char* serialNumberPtr);
  * SetOPMReadMaxDeltaDb().
  *
  * @param serialNumberPtr  Serial number (null-terminated).
- * @param enable           true to enable, false to disable.
+ * @param enable           Non-zero to enable, zero to disable. A single byte,
+ *                         matching the managed entry point.
  */
-void SetOPMReadValidation(const char* serialNumberPtr, bool enable);
+void SetOPMReadValidation(const char* serialNumberPtr, uint8_t enable);
 
 /**
  * Gets the read validation setting from an OPM-150.

@@ -149,6 +149,7 @@ class Library:
         "ResetParameters": ([], None),
         "EnableHighResolution": ([], None),
         "SetSweepParameters": ([c_double, c_double, c_double, c_double, c_double, c_int, c_int], None),
+        "SetReferenceOffset": ([c_double], None),
         "SetMPMChannel": ([c_int, c_int, c_ubyte], None),
         "SetOPMModule": ([c_int, c_ubyte], None),
         "SetAgilentLMSChannel": ([c_int, c_int, c_ubyte], None),
@@ -386,6 +387,17 @@ class Library:
         nanometre; the power meters process the finer grid only in that mode.
         """
         self._dll.SetSweepParameters(start_nm, stop_nm, step_nm, power_dbm, speed_nm_s, cycles, delay_ms)
+
+    def set_reference_offset(self, offset_db: float) -> None:
+        """Run the reference scan ``offset_db`` below the sweep power.
+
+        The reference path is the low-loss one, so a sweep power that is safe
+        for the DUT can overload the meter while the reference runs. A zero
+        offset, which is the state :meth:`reset_parameters` restores, leaves
+        both scans at the sweep power. The offset is zero or positive;
+        :meth:`validate_parameters` reports it otherwise rather than clamping.
+        """
+        self._dll.SetReferenceOffset(offset_db)
 
     def set_mpm_channel(self, module: int, channel: int, dynamic_range: int = 0) -> None:
         """Select an MPM channel. ``dynamic_range`` 0 means auto-ranging."""

@@ -7,7 +7,7 @@ Generated from the resolved dependency graph of the shipped library, so the list
 matches the binary rather than an intention. Regenerate at every release:
 
 ```bash
-python tools/licence_report.py --markdown
+python tools/third_party_notices.py --audit --markdown
 ```
 
 The audit run behind this draft resolved 45 packages: 28 third-party (all MIT or
@@ -126,17 +126,17 @@ declares. `Licence text` names the file embedded below, if that package ships on
 | Package | Version | Kind | Licence | Declared by | Licence text |
 |---|---|---|---|---|---|
 | `CommunityToolkit.HighPerformance` | 8.4.2 | transitive | MIT | license expression | `LICENSE.md` |
-| `DotNext.IO` | 6.10.0 | transitive | MIT | license expression | none |
-| `DotNext.Unsafe` | 6.9.0 | transitive | MIT | license expression | none |
-| `DotNext` | 6.10.0 | transitive | MIT | license expression | none |
+| `DotNext` | 6.12.2 | transitive | MIT | license expression | none |
+| `DotNext.IO` | 6.12.2 | transitive | MIT | license expression | none |
+| `DotNext.Unsafe` | 6.12.2 | transitive | MIT | license expression | none |
 | `IviFoundation.Visa` | 8.0.2 | transitive | see license\license.txt | license file in the package | none |
 | `KeysightTechnologies.Visa` | 18.6.6 | transitive | see license.txt | license file in the package | `LICENSE.TXT` |
 | `MathNet.Numerics` | 6.0.0-beta2 | transitive | MIT | license expression | none |
 | `Microsoft.DotNet.ILCompiler` | 10.0.15 | direct | MIT | license expression | none |
-| `Microsoft.Extensions.DependencyInjection.Abstractions` | 10.0.0 | transitive | MIT | license expression | none |
 | `Microsoft.Extensions.DependencyInjection` | 10.0.0 | transitive | MIT | license expression | none |
-| `Microsoft.Extensions.Logging.Abstractions` | 10.0.0 | transitive | MIT | license expression | none |
+| `Microsoft.Extensions.DependencyInjection.Abstractions` | 10.0.0 | transitive | MIT | license expression | none |
 | `Microsoft.Extensions.Logging` | 10.0.0 | transitive | MIT | license expression | none |
+| `Microsoft.Extensions.Logging.Abstractions` | 10.0.0 | transitive | MIT | license expression | none |
 | `Microsoft.Extensions.ObjectPool` | 10.0.13 | transitive | MIT | license expression | none |
 | `Microsoft.Extensions.Options` | 10.0.0 | transitive | MIT | license expression | none |
 | `Microsoft.Extensions.Primitives` | 10.0.0 | transitive | MIT | license expression | none |
@@ -144,16 +144,16 @@ declares. `Licence text` names the file embedded below, if that package ships on
 | `NationalInstruments.Visa` | 25.5.0.13 | transitive | MIT | license expression | none |
 | `QuickTickLib` | 3.0.0 | transitive | MIT | license expression | none |
 | `runtime.win-x64.Microsoft.DotNet.ILCompiler` | 10.0.15 | transitive | MIT | license expression | none |
+| `Serilog` | 4.4.0 | transitive | Apache-2.0 | license expression | none |
 | `Serilog.Enrichers.Environment` | 3.0.1 | transitive | Apache-2.0 | license expression | none |
 | `Serilog.Enrichers.Process` | 3.0.0 | transitive | Apache-2.0 | license expression | none |
 | `Serilog.Extensions.Logging` | 10.0.0 | transitive | Apache-2.0 | license expression | none |
 | `Serilog.Sinks.Console` | 6.1.1 | transitive | Apache-2.0 | license expression | none |
 | `Serilog.Sinks.Debug` | 3.0.0 | transitive | Apache-2.0 | license expression | none |
-| `Serilog.Sinks.File.GZip` | 1.0.2 | transitive | Apache-2.0 | license expression | none |
 | `Serilog.Sinks.File` | 7.0.0 | transitive | Apache-2.0 | license expression | none |
-| `Serilog` | 4.4.0 | transitive | Apache-2.0 | license expression | none |
-| `System.IO.Hashing` | 10.0.12 | transitive | MIT | license expression | none |
-| `System.Numerics.Tensors` | 10.0.13 | transitive | MIT | license expression | none |
+| `Serilog.Sinks.File.GZip` | 1.0.2 | transitive | Apache-2.0 | license expression | none |
+| `System.IO.Hashing` | 10.0.14 | transitive | MIT | license expression | none |
+| `System.Numerics.Tensors` | 11.0.0 | transitive | MIT | license expression | none |
 | `YY-Thunks` | 1.2.3 | direct | MIT | license expression | none |
 
 30 package(s); 28 ship no licence file, so their licence expression above is the whole declaration. The expressions in use are MIT and

@@ -42,21 +42,14 @@ import argparse
 import json
 import re
 import sys
-from hashlib import sha256
 from pathlib import Path
 
 from abi_surface import RUNTIME_EXPORTS, header_entry_points, pe_exports, pe_image
+from common import FAILURES, VERSION_PATTERN, digest, report, version_tuple
 
-VERSION = re.compile(r"^\d+(?:\.\d+){1,3}$")
 PACKAGE_VERSION = re.compile(r'^PACKAGE_VERSION\s*=\s*"([^"]+)"', re.MULTILINE)
 PYPROJECT_DYNAMIC = re.compile(r'^\s*dynamic\s*=\s*\[\s*"version"\s*\]', re.MULTILINE)
 PYPROJECT_VERSION = re.compile(r'^version\s*=\s*"([^"]+)"', re.MULTILINE)
-
-#: Hashing a text file means hashing its LF form. Git normalises line endings on
-#: the way into a repository, so a CRLF byte hash would only match on a checkout
-#: that happens to use CRLF. A release should not depend on the machine that
-#: verifies it. Binaries are hashed byte for byte.
-TEXT_SUFFIXES = {".c", ".h", ".hpp", ".py", ".pyi", ".md", ".txt", ".json", ".toml", ".yml", ".yaml"}
 
 #: The manifest fields that are not derived from the files. The ABI number moves
 #: when an entry point's signature or behaviour changes: 2 because SetConnections()
@@ -82,33 +75,6 @@ HASHED = [
     "include/SantecLibrary.h",
     "include/SantecLibrary.hpp",
 ]
-
-FAILURES: list[str] = []
-
-
-def report(label: str, ok: bool, detail: str = "") -> None:
-    print(f"  [{'ok' if ok else 'FAIL'}] {label}" + (f"  ({detail})" if detail else ""))
-    if not ok:
-        FAILURES.append(f"{label}{': ' + detail if detail else ''}")
-
-
-def digest(path: Path) -> str:
-    """The sha256 a bundle records for a file.
-
-    Text files are hashed with their line endings normalised to LF, which is how
-    they are stored in the public repository. Everything else is hashed as it is.
-    """
-    data = path.read_bytes()
-    if path.suffix.lower() in TEXT_SUFFIXES:
-        data = data.replace(b"\r\n", b"\n")
-    return sha256(data).hexdigest()
-
-
-def normalised(version: str) -> tuple[int, ...]:
-    """A version as comparable numbers, so 1.8.0 and 1.8.0.0 are the same release."""
-    parts = [int(part) for part in version.split(".")]
-    return tuple(parts + [0] * (4 - len(parts)))
-
 
 def summarise(names: list[str], limit: int = 5) -> str:
     """A name list short enough for a CI log line."""
@@ -154,7 +120,7 @@ def check_manifest(root: Path) -> tuple[str, str]:
 
     version = str(manifest.get("version", ""))
     platform = str(manifest.get("platform", ""))
-    report("the manifest carries a version", bool(VERSION.match(version)), version or "absent")
+    report("the manifest carries a version", bool(VERSION_PATTERN.match(version)), version or "absent")
     for field, kind in (("abi", int), ("platform", str), ("supportedOs", str),
                         ("builtFrom", str), ("pythonPackage", str)):
         report(f"the manifest carries {field}", isinstance(manifest.get(field), kind) and bool(manifest.get(field)),
@@ -190,7 +156,7 @@ def check_python_package(root: Path, manifest_version: str) -> None:
         return
 
     report("the Python package is the announced version",
-           normalised(package) == normalised(manifest_version) if VERSION.match(manifest_version) else False,
+           version_tuple(package) == version_tuple(manifest_version) if VERSION_PATTERN.match(manifest_version) else False,
            f"package {package}, manifest {manifest_version}")
 
     # One declaration: the distribution metadata takes its version from the package,
@@ -225,7 +191,7 @@ def pyproject_version(root: Path) -> str:
 
 def write_manifest(root: Path, version: str, built_from: str) -> int:
     """Write lib/win-x64/versions.json, the compatibility matrix the bundle ships."""
-    if not VERSION.match(version):
+    if not VERSION_PATTERN.match(version):
         print(f"{version} is not a release version: expected two to four dot-separated numbers")
         return 1
 

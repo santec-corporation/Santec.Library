@@ -95,8 +95,15 @@ class TSLMainParameters(object):
             return self._tab.Get(flatbuffers.number_types.Int8Flags, o + self._tab.Pos)
         return 0
 
+    # TSLMainParameters
+    def ReferenceOffset(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(24))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Float64Flags, o + self._tab.Pos)
+        return 0.0
+
 def TSLMainParametersStart(builder: flatbuffers.Builder):
-    builder.StartObject(10)
+    builder.StartObject(11)
 
 def Start(builder: flatbuffers.Builder):
     TSLMainParametersStart(builder)
@@ -160,6 +167,12 @@ def TSLMainParametersAddModulationSource(builder: flatbuffers.Builder, modulatio
 
 def AddModulationSource(builder: flatbuffers.Builder, modulationSource: int):
     TSLMainParametersAddModulationSource(builder, modulationSource)
+
+def TSLMainParametersAddReferenceOffset(builder: flatbuffers.Builder, referenceOffset: float):
+    builder.PrependFloat64Slot(10, referenceOffset, 0.0)
+
+def AddReferenceOffset(builder: flatbuffers.Builder, referenceOffset: float):
+    TSLMainParametersAddReferenceOffset(builder, referenceOffset)
 
 def TSLMainParametersEnd(builder: flatbuffers.Builder) -> int:
     return builder.EndObject()

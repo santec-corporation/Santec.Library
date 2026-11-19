@@ -32,6 +32,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from common import FAILURES, report
+
 REPO = Path(__file__).resolve().parent.parent
 PACKAGE_DIR = REPO / "python"
 
@@ -44,15 +46,6 @@ STUB_C = """
 __declspec(dllexport) int SantecLibraryStub(void) { return 0; }
 BOOL WINAPI DllMain(HINSTANCE h, DWORD reason, LPVOID reserved) { return TRUE; }
 """
-
-FAILURES: list[str] = []
-
-
-def report(label: str, ok: bool, detail: str = "") -> None:
-    print(f"  [{'ok' if ok else 'FAIL'}] {label}" + (f"  ({detail})" if detail else ""))
-    if not ok:
-        FAILURES.append(f"{label}{': ' + detail if detail else ''}")
-
 
 def run_isolated(code: str, env: dict | None = None, cwd: str | None = None) -> subprocess.CompletedProcess:
     environment = dict(os.environ)

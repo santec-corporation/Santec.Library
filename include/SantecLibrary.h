@@ -253,7 +253,7 @@ void EnableHighResolution(void);
  * @param startWavelength  Start wavelength (nm).
  * @param stopWavelength   Stop wavelength (nm).
  * @param stepWidth        Wavelength step (nm).
- * @param power            Optical power (mW).
+ * @param power            Optical power level (dBm).
  * @param speed            Sweep speed (nm/s).
  * @param cycles           Number of sweep cycles.
  * @param delay            Inter-cycle delay (ms).
@@ -261,6 +261,29 @@ void EnableHighResolution(void);
 void SetSweepParameters(double startWavelength, double stopWavelength,
                         double stepWidth, double power, double speed,
                         int32_t cycles, int32_t delay);
+
+/**
+ * Sets how far below the sweep power the reference scan runs.
+ *
+ * The reference path usually has less loss than the path through the device
+ * under test, so a sweep power that is safe for the DUT can overload the power
+ * meter while the reference runs. The library lowers the laser for the
+ * reference scan, restores the sweep power for the DUT scans, and accounts for
+ * the offset in the insertion loss it reports.
+ *
+ * A zero offset, the default after ResetParameters(), leaves both scans at the
+ * sweep power. The offset needs a finite sweep power and automatic power mode,
+ * which this library always uses. ValidateParameters() reports a negative or
+ * non-finite value rather than this function clamping it.
+ *
+ * The library lowers the reference scan alone with an MPM or a DAQ monitor.
+ * With an OPM-200 or an Agilent LMS it runs both scans at the lower power,
+ * which leaves the insertion loss unchanged, and in a PDL scan it applies the
+ * offset only when the sweep power exceeds the MPM input rating.
+ *
+ * @param offset  Offset below the sweep power (dB), zero or positive.
+ */
+void SetReferenceOffset(double offset);
 
 /**
  * Sets the range profile for an MPM channel.

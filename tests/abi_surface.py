@@ -24,15 +24,22 @@ import struct
 import sys
 from pathlib import Path
 
-# Declaration lines in the C header: a known return type, a name, then "(".
-HEADER_DECL = re.compile(
-    r"^\s*(?:void|bool|char\s*\*|const\s+char\s*\*|double|int32_t|uint8_t|uint16_t|int64_t|uint32_t|float)"
-    r"\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(",
-    re.MULTILINE,
+# An exported managed method: the attribute that exports it, then the method, which
+# takes the entry point's name. The backreference ties the two together, so the
+# scanner skips a method whose name disagrees with its attribute.
+MANAGED_SIGNATURE = re.compile(
+    r'\[UnmanagedCallersOnly\(EntryPoint\s*=\s*"(?P<name>[A-Za-z0-9_]+)"\)\]'
+    r"\s*public\s+static\s+(?:unsafe\s+)?(?P<returns>[A-Za-z_][A-Za-z0-9_*]*)\s+(?P=name)\s*\(",
 )
 
-# An exported managed method, named by the attribute that exports it.
-ATTRIBUTE = re.compile(r'\[UnmanagedCallersOnly\(EntryPoint\s*=\s*"([A-Za-z0-9_]+)"\)\]')
+# A declaration in either header: the return type, then the name and its parameter
+# list. One pattern reads SantecLibrary.h and SantecLibrary.hpp, which differ only in
+# how they spell an empty parameter list, "()" against "(void)".
+SIGNATURE = re.compile(
+    r"^\s*(?P<returns>void|bool|char\s*\*|const\s+char\s*\*|double|int32_t|uint8_t|uint16_t|int64_t|uint32_t|float)"
+    r"\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*\(",
+    re.MULTILINE,
+)
 
 # Symbols the NativeAOT toolchain adds to every native library. They are not part
 # of our contract, so an "extra export" report has to ignore them.
@@ -53,7 +60,7 @@ def header_entry_points(header: Path) -> set[str]:
     Members inside an enum or a macro are not declarations and are not matched,
     because the pattern requires a return type at the start of the line.
     """
-    return set(HEADER_DECL.findall(header.read_text(encoding="utf-8", errors="replace")))
+    return set(header_signatures(header))
 
 
 def parenthesised(text: str, opening: int) -> str:
@@ -69,51 +76,93 @@ def parenthesised(text: str, opening: int) -> str:
     fail("a declaration has unbalanced parentheses")
 
 
-def parameter_count(arguments: str) -> int:
-    """How many parameters one parameter list declares."""
+def top_level_parameters(arguments: str) -> list[str]:
+    """A parameter list split at the commas that separate parameters.
+
+    A comma inside a nested bracket, such as the one in a function pointer, does not
+    separate: the scanner counts the depth. "void" and an empty list declare none.
+    """
     text = arguments.strip()
     if not text or text == "void":
-        return 0
-    depth = 0
-    count = 1
+        return []
+
+    parameters, depth, current = [], 0, ""
     for character in text:
         if character in "([{":
             depth += 1
         elif character in ")]}":
             depth -= 1
-        elif character == "," and depth == 0:
-            count += 1
-    return count
+        if character == "," and depth == 0:
+            parameters.append(current)
+            current = ""
+        else:
+            current += character
+    parameters.append(current)
+    return [parameter.strip() for parameter in parameters if parameter.strip()]
+
+
+def c_type(text: str) -> str:
+    """A C type with its spacing normalised.
+
+    ``const char *`` and ``const char*`` are one type, and the two headers write
+    them both ways in places.
+    """
+    return re.sub(r"\s*\*\s*", "*", " ".join(text.split()))
+
+
+def parameter_types(arguments: str) -> tuple[str, ...]:
+    """The types a parameter list declares, with the parameter names dropped.
+
+    A parameter is written "type name", so everything before the last identifier is
+    the type. A parameter that is only a type keeps all of itself.
+    """
+    types = []
+    for parameter in top_level_parameters(arguments):
+        match = re.match(r"^(?P<type>.*?)\s*[A-Za-z_][A-Za-z0-9_]*$", parameter)
+        stated = match.group("type") if match and match.group("type").strip() else parameter
+        types.append(c_type(stated))
+    return tuple(types)
+
+
+def header_signatures(header: Path) -> dict[str, tuple[str, tuple[str, ...]]]:
+    """The return type and parameter types of every declaration in a header.
+
+    Two declarations of one name must state one signature: a header holding two
+    cannot tell a caller which one the binary implements.
+    """
+    text = header.read_text(encoding="utf-8", errors="replace")
+    signatures: dict[str, tuple[str, tuple[str, ...]]] = {}
+    for match in SIGNATURE.finditer(text):
+        name = match.group("name")
+        signature = (c_type(match.group("returns")),
+                     parameter_types(parenthesised(text, match.end() - 1)))
+        if name in signatures and signatures[name] != signature:
+            fail(f"{header.name} declares {name} with two different signatures")
+        signatures[name] = signature
+    return signatures
+
+
+def managed_signatures(*sources: Path) -> dict[str, tuple[str, tuple[str, ...]]]:
+    """The return type and parameter types of every exported managed method."""
+    signatures: dict[str, tuple[str, tuple[str, ...]]] = {}
+    for source in sources:
+        text = source.read_text(encoding="utf-8", errors="replace")
+        for match in MANAGED_SIGNATURE.finditer(text):
+            signatures[match.group("name")] = (
+                c_type(match.group("returns")),
+                parameter_types(parenthesised(text, match.end() - 1)),
+            )
+    return signatures
 
 
 def header_arities(header: Path) -> dict[str, int]:
-    """The parameter count every declaration in a C header states.
-
-    Two declarations of one name must agree: a header that states both cannot tell a
-    caller which one the binary implements.
-    """
-    text = header.read_text(encoding="utf-8", errors="replace")
-    arities: dict[str, int] = {}
-    for match in HEADER_DECL.finditer(text):
-        name = match.group(1)
-        count = parameter_count(parenthesised(text, match.end() - 1))
-        if name in arities and arities[name] != count:
-            fail(f"{header.name} declares {name} with {arities[name]} and {count} parameters")
-        arities[name] = count
-    return arities
+    """The parameter count every declaration in a header states."""
+    return {name: len(parameters) for name, (_, parameters) in header_signatures(header).items()}
 
 
 def managed_arities(*sources: Path) -> dict[str, int]:
     """The parameter count every ``[UnmanagedCallersOnly]`` method declares."""
-    arities: dict[str, int] = {}
-    for source in sources:
-        text = source.read_text(encoding="utf-8", errors="replace")
-        for match in ATTRIBUTE.finditer(text):
-            opening = text.find("(", match.end())
-            if opening < 0:
-                fail(f"{source.name}: {match.group(1)} has no parameter list")
-            arities[match.group(1)] = parameter_count(parenthesised(text, opening))
-    return arities
+    return {name: len(parameters) for name, (_, parameters) in managed_signatures(*sources).items()}
 
 
 def pe_layout(data: bytes, path: Path) -> tuple[int, int, int, int]:
