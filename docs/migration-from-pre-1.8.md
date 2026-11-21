@@ -16,8 +16,9 @@ Compatibility, in one table:
 | `ExportReferenceData()` / `ExportMeasurementData()` | they never wrote anywhere useful | use `...To(directory, baseName)` |
 | `Santec.Library.Wrapper` (.NET) | **removed** | declare the entry points yourself, or copy the C# sample |
 | pythonnet scripts | no managed assembly to load | use the `ctypes` examples |
-| `ConnectionConfig.Type` | now `VISA`, `FTDI`, `DAQ`, `LAN`, `LAN - UDP` | match on those; they used to be managed type names such as `VISAConnectionConfiguration`1` |
+| `ConnectionConfig.Type` | now `VISA`, `FTDI`, `DAQ`, `LAN`, `LAN - UDP` | match on those values; the field carries no managed type name such as `` `VISAConnectionConfiguration`1 `` |
 | `SetConnections` with an Agilent LMS or OPM power meter | previously rejected | nothing to change; it now connects |
+| `SetConnections(tsl, meter, daq)` | since 1.8.0.7: `SetConnections(tsl, meter, pcu, daq)`, ABI 2 | pass the polarization controller pointer, or `NULL`, as the third argument |
 
 Nothing else moved: the DLL and import library keep their names, the header keeps
 its, the entry points keep theirs, no new runtime dependency appeared, and the
@@ -35,7 +36,7 @@ The samples are no longer packaged: they live in this repository under
 
 ## C and C++
 
-Recompile. Two things will fail to build against the new header, on purpose:
+Recompile. Three things will fail to build against the new header, on purpose:
 
 ```c
 /* before */
@@ -51,6 +52,14 @@ SetOPMReadValidation(serial, true);
 
 /* after */
 SetOPMReadValidation(serial, 1);
+```
+
+```c
+/* before */
+SetConnections(tsl, meter, daq);
+
+/* after */
+SetConnections(tsl, meter, NULL, daq);
 ```
 
 Device lists now hand you library-allocated strings, so release them with the new
@@ -131,6 +140,10 @@ script:
 - **buffers are freed.** The examples call `FreeArrayData`/`FreeString`/
   `FreeConnectionConfigs`; a script that does not will grow by one scan payload
   per scan;
+- **`set_connections` takes the PCU before the DAQ.** The signature is
+  `set_connections(tsl, power_meter, pcu=None, spu=None)`. A three-argument call
+  passes the DAQ configuration as the PCU; pass the DAQ by keyword or move it to
+  fourth;
 - **the first scan is retried**, because of the laser-off behaviour described
   above (the old scripts raised "scan failed");
 - **the pythonnet path is gone.** A script that did
@@ -170,7 +183,8 @@ here.
 ## Checklist
 
 1. Take `include/` and `lib/win-x64` from the same release, never mix versions.
-2. Recompile; fix the `GetDevices` and `SetOPMReadValidation` call sites.
+2. Recompile; fix the `GetDevices`, `SetOPMReadValidation` and `SetConnections` call
+   sites.
 3. Add `FreeConnectionConfigs` after every `GetDevices`.
 4. If the scan payload is not parsed, switch to `Export*To` for the CSV output.
 5. If you are on .NET, port off the wrapper assembly.

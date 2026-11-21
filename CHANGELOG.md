@@ -6,6 +6,84 @@ when an entry point's signature or behaviour changes.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.8.0.9] - 2026-11-19
+
+### Added
+
+- `SetReferenceOffset(double)`: sets how far below the sweep power the reference scan
+  runs, so a sweep power that suits the device under test does not overload the meter
+  while the reference runs. The library lowers the laser for the reference scan,
+  restores the sweep power for the device scans, and accounts for the offset in the
+  insertion loss it reports. A zero offset, the default after `ResetParameters()`,
+  leaves both scans at the sweep power. `ValidateParameters()` reports a negative or
+  non-finite value instead of clamping it.
+- `python/santec_library/library.py`: `set_reference_offset(offset_db)`.
+- `TSLMainParameters.ReferenceOffset` carries the offset through the sweep parameters.
+
+### Changed
+
+- Rebuilt against updated instrument and process packages, with the third-party
+  notices regenerated to match.
+
+### Fixed
+
+- `SantecLibrary.hpp` declares the TSL2 entry points, `WaitTSLForSweepStatus()`,
+  `GetTSLIsLLPCompatible()`, `GetTSLCommandFormat()` and `SetOPMReadValidation()`,
+  which `SantecLibrary.h` already exported.
+- `SetPower()` documents its argument as dBm, which is what the DLL takes.
+
+## [1.8.0.7] - 2026-11-11
+
+### Added
+
+- `python/standard_pdl_sts.py`: a polarization-dependent-loss scan over a TSL, a PCU
+  and an MPM, exporting the result the way the insertion-loss scripts do. The script
+  caches the sweep in `scan_parameters.json`, so the next run starts from the last
+  settings.
+
+### Changed
+
+- `SetConnections()` takes the polarization controller as its third pointer, ahead of
+  the DAQ configuration. `lib/win-x64/versions.json` records ABI 2, so a caller that
+  passes three pointers has to add the PCU argument.
+- `GetTSLLoggingData()`, `GetTSLLoggingDataF()`, `GetTSL2PowerLoggingData()` and
+  `GetTSL2PowerLoggingDataF()` take `data` and `length` out-parameters. The library
+  allocates the buffer; release it with `FreeArrayData()`.
+- `set_connections(tsl, meter, pcu=None, spu=None)` puts `pcu` third and `spu` fourth,
+  so a positional call passes the PCU, not the DAQ device.
+- PDL needs the polarization controller in the same `SetConnections()` call. If the
+  caller connects the PCU by another route, PDL stays off.
+
+## [1.8.0.6] - 2026-11-06
+
+Rebuilt with the internal polarization-dependent-loss work. The public API for it
+arrived in 1.8.0.7.
+
+## [1.8.0.5] - 2026-11-06
+
+### Changed
+
+- Device discovery includes DAQ devices, which `GetDeviceNum()` and `GetDevices()`
+  list, and which connect in the same call as the instruments.
+
+## [1.8.0.4] - 2026-10-29
+
+Rebuilt against an updated `Santec.Instruments`.
+
+## [1.8.0.3] - 2026-10-29
+
+Rebuilt against the NativeAOT 10.0.14 toolchain, with the third-party notices
+regenerated to match.
+
+## [1.8.0.2] - 2026-10-22
+
+Rebuilt against updated compiler and instrument dependencies, with the third-party
+notices regenerated to match.
+
+The package version is declared once, in `python/santec_library/_version.py`.
+`setuptools` reads that declaration into the metadata at build time, so the
+distribution version cannot disagree with the DLL.
+
 ## [1.8.0.1] - 2026-10-09
 
 The first published release. `GetLibraryVersion()` reports `1.8.0.1`, and
@@ -39,9 +117,9 @@ The first published release. `GetLibraryVersion()` reports `1.8.0.1`, and
   declaration matches the managed signature on the wire.
 - `PolarizationState` is a 32-bit enum in the header, matching the managed enum,
   and includes the previously undocumented `Unknown = 0`.
-- `ConnectionConfig.Type` carries the transport markers the header documents , 
+- `ConnectionConfig.Type` carries the transport markers the header documents,
   `VISA`, `FTDI`, `DAQ`, `LAN`, `LAN - UDP`, instead of the managed type name
-  (`VISAConnectionConfiguration`1`). Callers that match on `Type` now find what
+  (`` `VISAConnectionConfiguration`1 ``). Callers that match on `Type` now find what
   the documentation promised.
 - `GetLibraryVersion()` and every other entry point work regardless of the
   process working directory. An earlier build read its file version from a
