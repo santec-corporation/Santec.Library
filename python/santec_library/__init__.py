@@ -1,4 +1,4 @@
-"""Python bindings for ``Santec.Library.dll``.
+"""Python bindings for the Santec.Library native library.
 
     from santec_library import Library
 
@@ -6,7 +6,7 @@
         for device in lib.list_devices():
             print(device)
 
-Importing this package does nothing: no DLL is loaded until you create a
+Importing this package does nothing: no library is loaded until you create a
 :class:`Library`. Reading scan results needs the FlatBuffers bindings, so import
 :mod:`santec_library.results` when you want them::
 

@@ -1,9 +1,10 @@
-"""ctypes bindings for ``Santec.Library.dll``.
+"""ctypes bindings for the Santec.Library native library.
 
-``Santec.Library.dll`` is a native library with a flat C ABI. This module loads
-it, binds the entry points it needs, and wraps them in a small object API. It
-does nothing at import time: no DLL is loaded until you create a :class:`Library`,
-so importing the package is safe from anywhere.
+``Santec.Library`` is a native library with a flat C ABI, published as
+``Santec.Library.dll`` on Windows and ``Santec.Library.so`` on Linux. This module
+loads it, binds the entry points it needs, and wraps them in a small object API.
+It does nothing at import time: no library is loaded until you create a
+:class:`Library`, so importing the package is safe from anywhere.
 
     from santec_library import Library
 
@@ -18,6 +19,8 @@ turns them into plain Python sequences.
 from __future__ import annotations
 
 import os
+import platform
+import sys
 from ctypes import (
     CDLL,
     POINTER,
@@ -36,7 +39,31 @@ from dataclasses import dataclass, field
 
 from ._version import PACKAGE_VERSION
 
-DLL_NAME = "Santec.Library.dll"
+
+def _library_name() -> str:
+    """The file name the build gives the native library on this platform."""
+    if sys.platform == "win32":
+        return "Santec.Library.dll"
+    if sys.platform == "darwin":
+        return "Santec.Library.dylib"
+    return "Santec.Library.so"
+
+
+def _runtime_identifier() -> str:
+    """The release directory this interpreter loads from, matching the .NET RID."""
+    machine = platform.machine().lower()
+    architecture = "arm64" if machine in {"arm64", "aarch64"} else "x64"
+    if sys.platform == "win32":
+        return f"win-{architecture}"
+    if sys.platform == "darwin":
+        return f"osx-{architecture}"
+    return f"linux-{architecture}"
+
+
+DLL_NAME = _library_name()
+
+#: The directory inside a release archive that holds the binary, e.g. ``win-x64``.
+RUNTIME_IDENTIFIER = _runtime_identifier()
 
 #: Serilog levels accepted by ``SetLogLevel``.
 LOG_VERBOSE, LOG_DEBUG, LOG_INFORMATION, LOG_WARNING, LOG_ERROR, LOG_FATAL = range(6)
@@ -47,9 +74,9 @@ class LibraryNotFound(FileNotFoundError):
 
 
 class AbiMismatch(RuntimeError):
-    """The DLL does not export everything this package calls into.
+    """The library does not export everything this package calls into.
 
-    Raised with the list of missing entry points, which means the DLL is older
+    Raised with the list of missing entry points, which means the library is older
     than this package expects (or is a different build entirely).
     """
 
@@ -72,11 +99,13 @@ def _decode(value: bytes | None) -> str:
     """Decode a string the library produced.
 
     The library marshals ``ConnectionConfig`` strings with the platform default,
-    which is the ANSI code page on Windows. ASCII names are unaffected; anything
-    else is best-effort.
+    which is the ANSI code page on Windows and UTF-8 everywhere else. ASCII names
+    are unaffected; anything else is best-effort.
     """
     if not value:
         return ""
+    if sys.platform != "win32":
+        return value.decode("utf-8", errors="replace")
     try:
         return value.decode("mbcs")
     except (LookupError, UnicodeDecodeError):
@@ -102,10 +131,10 @@ class Device:
 
 
 def resolve_dll(explicit: str | None = None) -> str:
-    """Find ``Santec.Library.dll``.
+    """Find the native library.
 
     In order: the path you pass, ``$SANTEC_LIBRARY_DLL``, the working directory,
-    the directory holding this package, then ``lib/win-x64`` in either of those
+    the directory holding this package, then ``lib/<platform>`` in either of those
     directories (the layout the release archive uses).
     """
     here = os.path.dirname(os.path.abspath(__file__))
@@ -114,8 +143,8 @@ def resolve_dll(explicit: str | None = None) -> str:
         os.environ.get("SANTEC_LIBRARY_DLL"),
         os.path.join(os.getcwd(), DLL_NAME),
         os.path.join(here, DLL_NAME),
-        os.path.join(os.getcwd(), "lib", "win-x64", DLL_NAME),
-        os.path.join(os.path.dirname(here), "lib", "win-x64", DLL_NAME),
+        os.path.join(os.getcwd(), "lib", RUNTIME_IDENTIFIER, DLL_NAME),
+        os.path.join(os.path.dirname(here), "lib", RUNTIME_IDENTIFIER, DLL_NAME),
     ]
     for candidate in candidates:
         if candidate and os.path.isfile(candidate):
@@ -126,14 +155,14 @@ def resolve_dll(explicit: str | None = None) -> str:
 
 
 class Library:
-    """A loaded ``Santec.Library.dll`` and the calls this package makes into it.
+    """A loaded native library and the calls this package makes into it.
 
     Use it as a context manager, or call :meth:`disconnect` yourself: the
     instruments stay claimed until then.
     """
 
     #: Entry points this package uses, with their ctypes signatures. Binding them
-    #: up front turns "the DLL is older than the package" into one clear error
+    #: up front turns "the binary is older than the package" into one clear error
     #: instead of an AttributeError in the middle of a measurement.
     SIGNATURES = {
         "GetDeviceNum": ([], c_int),

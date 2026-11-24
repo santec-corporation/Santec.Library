@@ -6,9 +6,9 @@ build-backend = "setuptools.build_meta"
 name = "santec-library"
 # The version is declared once, in santec_library/_version.py, and read from there.
 # That file is the one thing the release pipeline writes inside this package, so the
-# metadata cannot disagree with the DLL or with lib/win-x64/versions.json.
+# metadata cannot disagree with the native library or with lib/<platform>/versions.json.
 dynamic = ["version"]
-description = "Python bindings for the Santec.Library instrument SDK (Windows x64)"
+description = "Python bindings for the Santec.Library instrument SDK"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 keywords = ["santec", "instrument", "tsl", "mpm", "opm", "insertion-loss", "pdl"]
@@ -16,6 +16,7 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
