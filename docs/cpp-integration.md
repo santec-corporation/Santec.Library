@@ -1,7 +1,8 @@
 # C and C++ integration
 
-Santec.Library is a native DLL with a flat C ABI. This document covers linking it,
-owning the memory it hands back, and driving a measurement from C++.
+Santec.Library is a native library, a DLL on Windows and a shared object on
+Linux, with a flat C ABI. This document covers linking it, owning the memory it
+hands back, and driving a measurement from C++.
 
 The declarations are in `include/SantecLibrary.hpp`; compiled examples are in
 `examples/cpp/`.
@@ -10,16 +11,17 @@ The declarations are in `include/SantecLibrary.hpp`; compiled examples are in
 
 | File | Purpose |
 |---|---|
-| `Santec.Library.dll` | the library, loaded at run time |
-| `Santec.Library.lib` | MSVC import library, needed at link time |
-| `SantecLibrary.hpp` | declarations |
+| `lib/win-x64/Santec.Library.dll` | the library, Windows, loaded at run time |
+| `lib/win-x64/Santec.Library.lib` | MSVC import library, needed at link time |
+| `lib/linux-x64/Santec.Library.so` | the library, Linux, linked directly |
+| `include/SantecLibrary.hpp` | declarations |
 
-Platform: **Windows x64, C++20**. The header uses scoped enums
+Platforms: **Windows x64 and Linux x64, C++20**. The header uses scoped enums
 (`enum class PolarizationState : int32_t`), so it is a C++ header. A C compiler
 cannot parse it as it stands, see "Calling from C" below.
 
-Always take the header from the same release as the import library. The bin/LIB/header
-trio in `lib/win-x64` and `include/` is built and verified as a set.
+Always take the header from the same release as the binary. The library in
+`lib/<platform>` and the header in `include/` are built and verified as a set.
 
 ## Linking
 
@@ -40,6 +42,17 @@ In a `.vcxproj`:
   <AdditionalDependencies>Santec.Library.lib;%(AdditionalDependencies)</AdditionalDependencies>
 </Link>
 ```
+
+On Linux, link the shared object and record where it lives at run time:
+
+```bash
+g++ -std=c++20 main.cpp -I include -L lib/linux-x64 -Wl,-rpath,'$ORIGIN' \
+    -l:Santec.Library.so -o main
+```
+
+The object carries no `lib` prefix, so `-l:` names the file exactly. `$ORIGIN`
+makes the executable look beside itself; without it, put the directory on
+`LD_LIBRARY_PATH` at run time.
 
 `Santec.Library.dll` has to be next to the executable or on the search path at run
 time; the import library only satisfies the linker. `/utf-8` is worth setting even
@@ -199,10 +212,19 @@ larger than the range). Free it and fix the parameters.
 ## Calling from C
 
 `SantecLibrary.h` is valid C17 as well as C++20. The C++-only fixed underlying
-types are wrapped in `#ifdef __cplusplus`, and C sees integer typedefs instead:
+types are wrapped in `#ifdef __cplusplus`, and C sees integer typedefs instead.
+
+On Windows:
 
 ```
 cl /TC /std:c17 main.c /I include /link /LIBPATH:lib\win-x64 Santec.Library.lib
+```
+
+On Linux:
+
+```bash
+cc -std=c17 main.c -I include -L lib/linux-x64 -Wl,-rpath,'$ORIGIN' \
+   -l:Santec.Library.so -o main
 ```
 
 Two differences from the C++ form of the header:

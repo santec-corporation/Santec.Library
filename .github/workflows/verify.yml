@@ -38,7 +38,7 @@ jobs:
     # and the DLL has to be the native x64 build: the managed one has the same file
     # name and would otherwise be undetectable here.
     - name: Check the bundle
-      run: python tests/check_bundle.py
+      run: python tests/check_bundle.py --platform win-x64
 
     - name: Install the Python package
       run: python -m pip install "./python[numpy]"
@@ -95,3 +95,60 @@ jobs:
         # The header is a C contract as well as a C++ one, and both examples are C++.
         cmd /c "`"$vcvars`" >nul 2>&1 && cl /nologo /TC /std:c17 /Zs /I include tests\header_c_check.c"
         if ($LASTEXITCODE -ne 0) { throw 'include/SantecLibrary.h does not compile as C17.' }
+
+  # The Linux bundle arrives the same way as the Windows one: mirrored from the
+  # internal release build, never rebuilt here. A checkout without lib/linux-x64 has
+  # nothing to verify yet, so this job says so instead of failing.
+  verify-linux:
+
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+
+    - name: Setup Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+
+    - name: Look for the Linux bundle
+      id: bundle
+      run: |
+        if [ -f lib/linux-x64/versions.json ]; then
+          echo "present=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "present=false" >> "$GITHUB_OUTPUT"
+          echo "No lib/linux-x64 in this checkout: nothing to verify for Linux." >> "$GITHUB_STEP_SUMMARY"
+        fi
+
+    # The committed object, the headers, the licence and the manifest have to agree,
+    # and the object has to be a native x64 ELF image with the declared exports.
+    - name: Check the bundle
+      if: steps.bundle.outputs.present == 'true'
+      run: python tests/check_bundle.py --platform linux-x64
+
+    - name: Install the Python package
+      if: steps.bundle.outputs.present == 'true'
+      run: python -m pip install "./python[numpy]"
+
+    - name: Check the Python package
+      if: steps.bundle.outputs.present == 'true'
+      run: python tests/check_python_package.py
+
+    # Loads the object from a directory that does not contain it, with no instruments
+    # attached: the sentinels the Windows job checks, on a host with no driver at all.
+    - name: Smoke test the committed library
+      if: steps.bundle.outputs.present == 'true'
+      run: |
+        version=$(python -c "import json; print(json.load(open('lib/linux-x64/versions.json'))['version'])")
+        python tests/smoke_test.py --dll lib/linux-x64/Santec.Library.so --expect-version "$version"
+
+    # The header is a C contract on every platform; this compiles it where MSVC is absent.
+    - name: Compile the C header as C17
+      if: steps.bundle.outputs.present == 'true'
+      run: cc -std=c17 -I include -c -o /dev/null tests/header_c_check.c

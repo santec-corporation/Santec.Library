@@ -10,15 +10,14 @@ binding.
 pip install ./python        # or ./python[numpy] for the array helpers
 ```
 
-Requires 64-bit Python 3.10 or later. The library loads the DLL through `ctypes`,
-so there is nothing to compile, and the same `Santec.Library.dll` the C and C++
-callers use.
+Requires 64-bit Python 3.10 or later. The package loads the native library through
+`ctypes`, so there is nothing to compile, and the same binary the C and C++ callers use.
 
 ```python
 from santec_library import Library
 from santec_library.results import parse
 
-with Library() as library:                       # finds the DLL, or pass its path
+with Library() as library:                       # finds the library, or pass its path
     library.enable_debug()
     for device in library.list_devices():
         print(device)
@@ -40,8 +39,8 @@ with Library() as library:                       # finds the DLL, or pass its pa
 
 What the package does for you, all of which the raw calls make you do yourself:
 
-- finds the DLL (`--dll`-style path, `$SANTEC_LIBRARY_DLL`, the working directory,
-  next to the package, or `lib/win-x64`) and refuses an older build by naming the
+- finds the library (`--dll`-style path, `$SANTEC_LIBRARY_DLL`, the working directory,
+  next to the package, or `lib/<platform>`) and refuses an older build by naming the
   entry points it is missing, rather than failing later with a `TypeError`;
 - frees every buffer the library allocates, including on the error path;
 - retries the first scan after connecting, which returns nothing because the call
@@ -67,9 +66,10 @@ if you are writing your own wrapper or debugging a signature.
 
 ## Requirements
 
-- **64-bit Python.** The DLL is x64; a 32-bit interpreter raises
+- **64-bit Python.** The library is x64; a 32-bit interpreter raises
   `OSError: [WinError 193] %1 is not a valid Win32 application`.
-- The DLL beside your script, or an explicit path.
+- The library beside your script, or an explicit path. The file is
+  `Santec.Library.dll` on Windows and `Santec.Library.so` on Linux.
 - `numpy` only if you use the `...AsNumpy()` result helpers. The plain flatbuffers
   accessors work without it.
 
@@ -79,7 +79,7 @@ if you are writing your own wrapper or debugging a signature.
 import ctypes
 import os
 
-DLL_NAME = "Santec.Library.dll"
+DLL_NAME = "Santec.Library.dll" if os.name == "nt" else "Santec.Library.so"
 
 def load_library(explicit: str | None = None):
     for candidate in (explicit,
@@ -162,14 +162,14 @@ finally:
 ```
 
 `c_char_p` members read as `bytes`, not `str`, decode them yourself. The library
-marshals them with the platform default (ANSI on Windows), not UTF-8, which only
+marshals them with the platform default (ANSI on Windows, UTF-8 elsewhere), which only
 matters for non-ASCII product names:
 
 ```python
-name = config.ProductName.decode("mbcs") if config.ProductName else ""
+name = config.ProductName.decode("mbcs" if os.name == "nt" else "utf-8") if config.ProductName else ""
 ```
 
-Pass structures by address (`byref`). Passing a struct where the DLL expects a
+Pass structures by address (`byref`). Passing a struct where the library expects a
 pointer works on x64 for large structures, but only by accident of the calling
 convention, `byref` is correct and self-documenting.
 
@@ -205,7 +205,7 @@ payload = scan()
 
 Three things are load-bearing in that snippet:
 
-- **a fresh out-pointer per attempt.** On failure the DLL does not always write to
+- **a fresh out-pointer per attempt.** On failure the library does not always write to
   it, so reusing one can look at stale memory;
 - **`FreeArrayData` in a `finally`.** The buffer belongs to the library and leaks
   otherwise, once per scan, which adds up in a sweep loop;

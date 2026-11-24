@@ -18,15 +18,18 @@ with the function named in that entry's documentation, never with `free()` and n
 reaching into the returned structure. The index at the end of this document lists them.
 
 **Errors.** Nothing throws. On failure an entry point returns its documented sentinel
-(`false`, `0`, `NaN`, a null pointer, or nothing written) and logs to
-`%APPDATA%\Santec\SantecLibrary\logs`. There is no error-query entry point in this
-version; check that log.
+(`false`, `0`, `NaN`, a null pointer, or nothing written) and logs to the user's
+application data directory: `%APPDATA%\Santec\SantecLibrary\logs` on Windows,
+`~/.config/Santec/SantecLibrary/logs` on Linux. There is no error-query entry point in
+this version; check that log.
 
 **Strings.** Parameters documented as UTF-8 are null-terminated `char*`. Strings the
 library returns are UTF-8. `ConnectionConfig` is the exception: its members are marshalled
-with the platform default (ANSI on Windows), which matters only for non-ASCII device names.
+with the platform default (ANSI on Windows, UTF-8 on Linux), which matters only for
+non-ASCII device names.
 
-**Platform.** Windows x64. `SIMULATION` builds (development only) report mock instruments.
+**Platforms.** Windows x64 and Linux x64. `SIMULATION` builds (development only) report
+mock instruments.
 
 ## Contents
 

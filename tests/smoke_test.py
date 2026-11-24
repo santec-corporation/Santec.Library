@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Load a published Santec.Library.dll the way a customer would, with no hardware.
+"""Load a published Santec.Library binary the way a customer would, with no hardware.
 
 This is the check that runs in CI on every release. It catches the failures a
 build-only pipeline cannot see:
 
-  * a DLL that only initialises when the process working directory happens to
+  * a library that only initialises when the process working directory happens to
     contain it (an earlier build killed the host process in that case), so the
     script deliberately runs from a temporary directory;
   * a SIMULATION build, because ``--expect-devices`` defaults to zero and a
@@ -17,6 +17,7 @@ build-only pipeline cannot see:
 
 Usage
     python tools/smoke_test.py --dll aot/Santec.Library.dll
+    python tools/smoke_test.py --dll aot/Santec.Library.so
     python tools/smoke_test.py --dll aot/Santec.Library.dll --expect-version v1.8.0
 """
 
@@ -57,7 +58,8 @@ def check(label: str, ok: bool, detail: object = "") -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--dll", required=True, help="path to the published Santec.Library.dll")
+    parser.add_argument("--dll", required=True,
+                        help="path to the published Santec.Library.dll or Santec.Library.so")
     parser.add_argument("--expect-devices", type=int, default=0,
                         help="device count expected with no instruments attached (default 0)")
     parser.add_argument("--expect-version", help="version the DLL must report, e.g. the release tag")

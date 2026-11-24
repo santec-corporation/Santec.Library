@@ -6,9 +6,13 @@
  *
  *   cl /nologo /TC /W3 /Zs /I Santec.Library tools\header_c_check.c
  *
- * The release job runs exactly that, and the public repository runs it against the
- * published header as `cl ... /Zs /I include tests\header_c_check.c`, where this
- * file is mirrored.
+ * The Windows release job runs exactly that. A host without MSVC runs the same test
+ * with the system compiler instead:
+ *
+ *   cc -std=c17 -I Santec.Library -c -o /dev/null tools/header_c_check.c
+ *
+ * The public repository runs the MSVC form against the published header as
+ * `cl ... /Zs /I include tests\header_c_check.c`, where this file is mirrored.
  *
  * /TC forces C. If this stops compiling, the header has grown C++-only syntax
  * again - most likely a fixed underlying type on an enum, which is why those are

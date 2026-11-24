@@ -1,21 +1,25 @@
 #!/usr/bin/env python3
 """Check a shipped bundle: the binary, the headers and the manifest agree.
 
-The public repository has no build. Everything that proves the committed DLL
+The public repository has no build. Everything that proves the committed binary
 matches the committed headers has to be checked against the files themselves, so
 this reads a bundle directory and compares:
 
-  * the DLL's PE image: native x64, no CLR header, so a framework-dependent
-    build cannot be mistaken for the published library;
-  * the DLL's export table against the function declarations in
+  * the binary's image: native x64, and on Windows without a CLR header, so a
+    framework-dependent build cannot be mistaken for the published library;
+  * its export table against the function declarations in
     ``include/SantecLibrary.h``;
-  * every sha256 in ``lib/win-x64/versions.json`` against the file it names;
+  * every sha256 in ``lib/<platform>/versions.json`` against the file it names;
   * the manifest against the fields it promises:
     version, ABI number, platform, supported OS, build commit, Python package;
   * that the Python package in the bundle is the version the manifest announces,
     and that ``python/pyproject.toml`` takes its version from the package rather
     than declaring one of its own;
   * that the binary licence travels with the files.
+
+A bundle carries one platform, because each is built on its own runner. The
+``--platform`` option says which one to check; without it the platform is read from
+the single ``lib/`` directory the bundle carries.
 
 Text files are hashed in their LF form, because that is how a repository stores
 them: a hash that only matched on one machine's line endings would fail the first
@@ -30,6 +34,7 @@ public mirror, which takes a subset of the same files.
 
 Usage
     python tools/check_bundle.py --root Santec.Library-1.8.0-win-x64
+    python tools/check_bundle.py --root Santec.Library-1.8.0-linux-x64 --platform linux-x64
     python tools/check_bundle.py --write-manifest --root <bundle> --version 1.8.0 --built-from <sha>
     python tools/check_bundle.py                       # the repository itself
 
@@ -44,37 +49,70 @@ import re
 import sys
 from pathlib import Path
 
-from abi_surface import RUNTIME_EXPORTS, header_entry_points, pe_exports, pe_image
+from abi_surface import RUNTIME_EXPORTS, header_entry_points, native_exports, native_image
 from common import FAILURES, VERSION_PATTERN, digest, report, version_tuple
 
 PACKAGE_VERSION = re.compile(r'^PACKAGE_VERSION\s*=\s*"([^"]+)"', re.MULTILINE)
 PYPROJECT_DYNAMIC = re.compile(r'^\s*dynamic\s*=\s*\[\s*"version"\s*\]', re.MULTILINE)
 PYPROJECT_VERSION = re.compile(r'^version\s*=\s*"([^"]+)"', re.MULTILINE)
 
-#: The manifest fields that are not derived from the files. The ABI number moves
-#: when an entry point's signature or behaviour changes: 2 because SetConnections()
-#: takes the polarization controller, which is a different argument list.
-MANIFEST_CONSTANTS = {"abi": 2, "platform": "win-x64", "supportedOs": "Windows 8 or later (x64)"}
+#: The ABI number moves when an entry point's signature or behaviour changes: 2
+#: because SetConnections() takes the polarization controller, which is a different
+#: argument list.
+ABI = 2
 
-#: What a bundle must contain, relative to its root.
-REQUIRED = [
-    "include/SantecLibrary.h",
-    "include/SantecLibrary.hpp",
-    "lib/win-x64/Santec.Library.dll",
-    "lib/win-x64/Santec.Library.lib",
-    "lib/win-x64/versions.json",
-    "lib/win-x64/LICENSE.txt",
-]
+#: What a bundle carries per platform: the names the linker produces, and the
+#: compatibility statement its manifest makes. A shared object has no import
+#: library, because a caller links against the object itself.
+PLATFORMS = {
+    "win-x64": {
+        "library": "Santec.Library.dll",
+        "importLibrary": "Santec.Library.lib",
+        "supportedOs": "Windows 8 or later (x64)",
+    },
+    "linux-x64": {
+        "library": "Santec.Library.so",
+        "importLibrary": None,
+        "supportedOs": "Linux x64, glibc 2.35 or later",
+    },
+}
 
-#: The files the manifest hashes. The two binaries and both headers: enough to
-#: prove the committed binary matches the committed headers, which is all the
-#: public repository can check without building anything.
-HASHED = [
-    "lib/win-x64/Santec.Library.dll",
-    "lib/win-x64/Santec.Library.lib",
-    "include/SantecLibrary.h",
-    "include/SantecLibrary.hpp",
-]
+
+def library_path(platform: str) -> str:
+    """Where a bundle keeps the binary for a platform."""
+    return f"lib/{platform}/{PLATFORMS[platform]['library']}"
+
+
+def required_files(platform: str) -> list[str]:
+    """What a bundle must contain, relative to its root."""
+    files = ["include/SantecLibrary.h", "include/SantecLibrary.hpp", library_path(platform)]
+    import_library = PLATFORMS[platform]["importLibrary"]
+    if import_library:
+        files.append(f"lib/{platform}/{import_library}")
+    files.extend([f"lib/{platform}/versions.json", f"lib/{platform}/LICENSE.txt"])
+    return files
+
+
+def hashed_files(platform: str) -> list[str]:
+    """The files the manifest hashes.
+
+    The binary and both headers: enough to prove the committed binary matches the
+    committed headers, which is all the public repository can check without building
+    anything. The import library is a second artefact of the same Windows link, so
+    it is hashed there as well.
+    """
+    files = [library_path(platform), "include/SantecLibrary.h", "include/SantecLibrary.hpp"]
+    import_library = PLATFORMS[platform]["importLibrary"]
+    if import_library:
+        files.insert(1, f"lib/{platform}/{import_library}")
+    return files
+
+
+def detect_platform(root: Path) -> str | None:
+    """The platform a bundle was built for, when its layout says so unambiguously."""
+    found = [name for name in PLATFORMS if (root / "lib" / name).is_dir()]
+    return found[0] if len(found) == 1 else None
+
 
 def summarise(names: list[str], limit: int = 5) -> str:
     """A name list short enough for a CI log line."""
@@ -83,32 +121,33 @@ def summarise(names: list[str], limit: int = 5) -> str:
     return f"{names[:limit]} and {len(names) - limit} more"
 
 
-def check_layout(root: Path) -> bool:
-    missing = [name for name in REQUIRED if not (root / name).is_file()]
-    report("bundle layout", not missing, f"missing: {missing}" if missing else f"{len(REQUIRED)} files")
+def check_layout(root: Path, platform: str) -> bool:
+    required = required_files(platform)
+    missing = [name for name in required if not (root / name).is_file()]
+    report(f"{platform} bundle layout", not missing, f"missing: {missing}" if missing else f"{len(required)} files")
     return not missing
 
 
-def check_binary(dll: Path, header: Path) -> None:
-    machine, managed = pe_image(dll)
+def check_binary(binary: Path, header: Path) -> None:
+    machine, managed = native_image(binary)
     if managed:
-        report("the DLL is the native library", False, "managed assembly with a CLR header")
+        report(f"{binary.name} is the native library", False, "managed assembly with a CLR header")
         return
-    report("the DLL is a native x64 image", machine == "x64", machine)
+    report(f"{binary.name} is a native x64 image", machine == "x64", machine)
 
     declared = header_entry_points(header)
-    exported = set(pe_exports(dll))
+    exported = set(native_exports(binary))
     absent = sorted(declared - exported)
-    report(f"the DLL exports the {len(declared)} entry points of {header.name}",
+    report(f"{binary.name} exports the {len(declared)} entry points of {header.name}",
            not absent, f"absent: {summarise(absent)}" if absent else "")
     extra = sorted(exported - declared - RUNTIME_EXPORTS)
-    report("the DLL exports nothing the header does not declare", not extra,
+    report(f"{binary.name} exports nothing the header does not declare", not extra,
            f"undeclared: {summarise(extra)}" if extra else "")
 
 
-def check_manifest(root: Path) -> tuple[str, str]:
+def check_manifest(root: Path, platform: str) -> tuple[str, str]:
     """Check the manifest's fields and hashes. Returns (version, platform)."""
-    path = root / "lib" / "win-x64" / "versions.json"
+    path = root / "lib" / platform / "versions.json"
     try:
         manifest = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
@@ -119,18 +158,21 @@ def check_manifest(root: Path) -> tuple[str, str]:
         return "", ""
 
     version = str(manifest.get("version", ""))
-    platform = str(manifest.get("platform", ""))
+    stated = str(manifest.get("platform", ""))
     report("the manifest carries a version", bool(VERSION_PATTERN.match(version)), version or "absent")
     for field, kind in (("abi", int), ("platform", str), ("supportedOs", str),
                         ("builtFrom", str), ("pythonPackage", str)):
         report(f"the manifest carries {field}", isinstance(manifest.get(field), kind) and bool(manifest.get(field)),
                str(manifest.get(field, "absent")))
-    report("the manifest describes the bundle's platform", platform == "win-x64", platform or "absent")
+    report("the manifest describes the bundle's platform", stated == platform, stated or "absent")
+    report("the manifest states the platform it supports",
+           manifest.get("supportedOs") == PLATFORMS[platform]["supportedOs"],
+           str(manifest.get("supportedOs", "absent")))
 
     files = manifest.get("files")
     if not isinstance(files, dict) or not files:
         report("the manifest lists the files it hashes", False, "no 'files' object")
-        return version, platform
+        return version, stated
 
     for name, expected in sorted(files.items()):
         member = root / name
@@ -141,11 +183,11 @@ def check_manifest(root: Path) -> tuple[str, str]:
         else:
             report(f"{name} matches its sha256", True)
 
-    for name in HASHED:
+    for name in hashed_files(platform):
         if name not in files:
             report(f"the manifest hashes {name}", False, "not listed")
 
-    return version, platform
+    return version, stated
 
 
 def check_python_package(root: Path, manifest_version: str) -> None:
@@ -189,13 +231,14 @@ def pyproject_version(root: Path) -> str:
     return match.group(1) if match else ""
 
 
-def write_manifest(root: Path, version: str, built_from: str) -> int:
-    """Write lib/win-x64/versions.json, the compatibility matrix the bundle ships."""
+def write_manifest(root: Path, version: str, built_from: str, platform: str) -> int:
+    """Write lib/<platform>/versions.json, the compatibility matrix the bundle ships."""
     if not VERSION_PATTERN.match(version):
         print(f"{version} is not a release version: expected two to four dot-separated numbers")
         return 1
 
-    missing = [name for name in HASHED if not (root / name).is_file()]
+    hashed = hashed_files(platform)
+    missing = [name for name in hashed if not (root / name).is_file()]
     if missing:
         print(f"cannot describe the bundle: {root} is missing {missing}")
         return 1
@@ -208,14 +251,16 @@ def write_manifest(root: Path, version: str, built_from: str) -> int:
 
     manifest = {
         "version": version,
-        **MANIFEST_CONSTANTS,
+        "abi": ABI,
+        "platform": platform,
+        "supportedOs": PLATFORMS[platform]["supportedOs"],
         "builtFrom": built_from,
         "pythonPackage": package,
-        "files": {name: digest(root / name) for name in HASHED},
+        "files": {name: digest(root / name) for name in hashed},
     }
-    target = root / "lib" / "win-x64" / "versions.json"
+    target = root / "lib" / platform / "versions.json"
     target.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8", newline="\n")
-    print(f"wrote {target}: {version}, {len(HASHED)} hashed files, python package {package}")
+    print(f"wrote {target}: {version}, {len(hashed)} hashed files, python package {package}")
     return 0
 
 
@@ -223,31 +268,37 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parent.parent,
                         help="bundle directory to check (default: this repository)")
+    parser.add_argument("--platform", choices=sorted(PLATFORMS),
+                        help="platform the bundle was built for (default: the one lib/ carries)")
     parser.add_argument("--write-manifest", action="store_true",
-                        help="write lib/win-x64/versions.json for the bundle in --root")
+                        help="write lib/<platform>/versions.json for the bundle in --root")
     parser.add_argument("--version", help="the version to record when writing the manifest")
     parser.add_argument("--built-from", default="", help="the commit the bundle was built from")
     args = parser.parse_args()
 
     root = args.root.resolve()
+    platform = args.platform or detect_platform(root)
+    if platform is None:
+        print(f"cannot tell which platform {root} is for: pass --platform {', '.join(sorted(PLATFORMS))}")
+        return 1
 
     if args.write_manifest:
         if not args.version:
             print("--write-manifest needs --version")
             return 1
-        return write_manifest(root, args.version, args.built_from)
+        return write_manifest(root, args.version, args.built_from, platform)
 
-    print(f"checking {root}\n")
+    print(f"checking {root} ({platform})\n")
 
-    if not check_layout(root):
+    if not check_layout(root, platform):
         print("\nBUNDLE CHECK FAILED")
         for failure in FAILURES:
             print(f"  - {failure}")
         return 1
 
-    check_binary(root / "lib" / "win-x64" / "Santec.Library.dll", root / "include" / "SantecLibrary.h")
+    check_binary(root / "lib" / platform / PLATFORMS[platform]["library"], root / "include" / "SantecLibrary.h")
 
-    version, platform = check_manifest(root)
+    version, stated = check_manifest(root, platform)
     check_python_package(root, version)
 
     print()
@@ -257,7 +308,7 @@ def main() -> int:
             print(f"  - {failure}")
         return 1
 
-    print(f"Bundle check passed: {version} ({platform}).")
+    print(f"Bundle check passed: {version} ({stated}).")
     return 0
 
 

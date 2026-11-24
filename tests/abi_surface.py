@@ -10,11 +10,12 @@ Both readers are shared because the same questions are asked in two places:
     bundle, with no sources and no compiler involved. That is all the public
     repository has.
 
-Two parsers for one contract would drift, so the header scanner and the PE
-readers live here.
+Two parsers for one contract would drift, so the header scanner and the binary
+readers live here. A published library is a PE image on Windows and an ELF image
+on Linux, and both carry their exports in a table this module reads.
 
 Usage
-    from abi_surface import header_entry_points, pe_exports, pe_image
+    from abi_surface import header_entry_points, native_exports, native_image
 """
 
 from __future__ import annotations
@@ -46,6 +47,24 @@ SIGNATURE = re.compile(
 RUNTIME_EXPORTS = {"DotNetRuntimeDebugHeader"}
 
 MACHINES = {0x8664: "x64", 0x014C: "x86", 0xAA64: "arm64"}
+
+ELF_MAGIC = b"\x7fELF"
+ELF_MACHINES = {62: "x64", 3: "x86", 183: "arm64"}
+
+# ELF section and symbol constants. Only the dynamic symbol table is read: those are
+# the symbols a dynamic linker can resolve, which is what a caller links against.
+SHT_DYNSYM = 11
+SHN_UNDEF = 0
+SHN_LORESERVE = 0xFF00
+STB_GLOBAL, STB_WEAK = 1, 2
+STT_OBJECT, STT_FUNC = 1, 2
+STV_DEFAULT = 0
+
+# Names the linker gives a shared object rather than the library: the entry and exit
+# sections, and the boundaries of the data segment. They are not part of a contract and
+# appear in the dynamic symbol table of most ELF binaries.
+ELF_LINKER_SYMBOLS = {"_init", "_fini", "_start", "__bss_start", "__data_start",
+                      "_edata", "_end", "_IO_stdin_used"}
 
 
 def fail(message: str) -> None:
@@ -230,3 +249,84 @@ def pe_exports(path: Path) -> list[str]:
         end = data.index(b"\0", start)
         exported.append(data[start:end].decode("ascii", errors="replace"))
     return exported
+
+
+def elf_layout(data: bytes, path: Path) -> tuple[str, int, int, int, int]:
+    """The byte order and section table of an ELF file.
+
+    Returns (struct prefix, machine, section table offset, entry size, entry count).
+    Only 64-bit images are read: the SDK ships x64 and arm64, both class 2.
+    """
+    if len(data) < 0x40 or data[:4] != ELF_MAGIC:
+        fail(f"{path} is not an ELF file")
+    if data[4] != 2:
+        fail(f"{path} is a 32-bit ELF file; the SDK ships 64-bit images")
+
+    endian = "<" if data[5] == 1 else ">"
+    machine, = struct.unpack_from(endian + "H", data, 18)
+    offset, = struct.unpack_from(endian + "Q", data, 0x28)
+    entry_size, = struct.unpack_from(endian + "H", data, 0x3A)
+    count, = struct.unpack_from(endian + "H", data, 0x3C)
+    return endian, machine, offset, entry_size, count
+
+
+def elf_image(path: Path) -> tuple[str, bool]:
+    """The machine type of an ELF file. ELF has no managed-image marker, so never managed."""
+    _, machine, _, _, _ = elf_layout(path.read_bytes(), path)
+    return ELF_MACHINES.get(machine, f"0x{machine:04x}"), False
+
+
+def elf_exports(path: Path) -> list[str]:
+    """Names a dynamic linker can resolve, read from the ELF dynamic symbol table.
+
+    Absolute, undefined, hidden and local symbols are skipped: they are either linker
+    bookkeeping such as ``__bss_start`` or not visible to a caller, and neither is
+    part of the contract.
+    """
+    data = path.read_bytes()
+    endian, _, offset, entry_size, count = elf_layout(data, path)
+
+    sections = []
+    for index in range(count):
+        base = offset + index * entry_size
+        _, kind, _, _, file_offset, size, link, _, _, unit = struct.unpack_from(
+            endian + "IIQQQQIIQQ", data, base)
+        sections.append((kind, file_offset, size, link, unit))
+
+    for kind, file_offset, size, link, unit in sections:
+        if kind != SHT_DYNSYM or link >= len(sections):
+            continue
+        _, strings_offset, strings_size, _, _ = sections[link]
+        strings = data[strings_offset:strings_offset + strings_size]
+
+        exported = []
+        for index in range(size // unit if unit else 0):
+            name_offset, info, other, section = struct.unpack_from(
+                endian + "IBBH", data, file_offset + index * unit)
+            binding, symbol_type = info >> 4, info & 0x0F
+            if not name_offset or section == SHN_UNDEF or section >= SHN_LORESERVE:
+                continue
+            if binding not in (STB_GLOBAL, STB_WEAK):
+                continue
+            if symbol_type not in (STT_OBJECT, STT_FUNC) or other & 0x3 != STV_DEFAULT:
+                continue
+            end = strings.find(b"\0", name_offset)
+            name = strings[name_offset:end if end >= 0 else None].decode("ascii", errors="replace")
+            if name and name not in ELF_LINKER_SYMBOLS:
+                exported.append(name)
+        return exported
+    return []
+
+
+def native_image(path: Path) -> tuple[str, bool]:
+    """The machine type of a published library, and whether it is a managed PE image."""
+    if path.read_bytes()[:4] == ELF_MAGIC:
+        return elf_image(path)
+    return pe_image(path)
+
+
+def native_exports(path: Path) -> list[str]:
+    """The symbols a published library exports, read from whichever format it is."""
+    if path.read_bytes()[:4] == ELF_MAGIC:
+        return elf_exports(path)
+    return pe_exports(path)

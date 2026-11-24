@@ -8,11 +8,12 @@ C++, .NET and Python.
 | What you get | Where |
 |---|---|
 | `Santec.Library.dll` + `Santec.Library.lib` (win-x64) | `lib/win-x64/` |
+| `Santec.Library.so` (linux-x64) | `lib/linux-x64/` |
 | C and C++ declarations | `include/SantecLibrary.h`, `include/SantecLibrary.hpp` |
 | Entry-point reference (generated from the header) | `docs/abi-reference.md` |
 | Examples | `examples/cpp/`, `examples/csharp/`, and the Python scripts in `python/` |
 | Python bindings and FlatBuffers result types | `python/` |
-| Version, build commit and file hashes | `lib/win-x64/versions.json` |
+| Version, build commit and file hashes | `lib/<platform>/versions.json` |
 
 Supported instruments: TSL-570/775 tunable lasers, MPM-210H multi-channel power
 meters, OPM-200 optical power meters, Agilent/Keysight 8163B/8164A lightwave
@@ -21,8 +22,9 @@ devices used as the power-monitor source. The OPM-150 is supported for single
 readings and network configuration, not for sweeps: it has no sweep pipeline, and
 `ValidateParameters()` says so rather than passing.
 
-**Platform: Windows x64.** The library targets `net10.0-windows8.0` and links the
-Windows-only YY-Thunks runtime.
+**Platforms: Windows x64 and Linux x64.** Both binaries are built from the same
+sources, and every release attaches one archive per platform. The Linux build needs
+glibc 2.35 or later and `libstdc++` at run time.
 
 ## Install
 
@@ -32,10 +34,11 @@ The binaries are in this repository, so there is nothing to fetch:
 git clone https://github.com/santec-corporation/Santec.Library.git
 ```
 
-Copy `lib/win-x64/Santec.Library.dll` next to your application, or keep it in
-`lib/win-x64` and load it by path. Every release is also attached to the
-[releases page](https://github.com/santec-corporation/Santec.Library/releases) as
-`Santec.Library-<version>-win-x64.zip`.
+Copy `lib/win-x64/Santec.Library.dll` or `lib/linux-x64/Santec.Library.so` next to your
+application, or keep it in `lib/` and load it by path. Every release is also attached to
+the [releases page](https://github.com/santec-corporation/Santec.Library/releases) as
+`Santec.Library-<version>-win-x64.zip` and `Santec.Library-<version>-linux-x64.zip`, and
+`lib/` carries the platforms that release committed.
 
 ## Prerequisites
 
@@ -44,20 +47,37 @@ not ship them.
 
 | Instrument connection | Required |
 |---|---|
-| GPIB / USB (VISA) | NI-VISA, or Keysight VISA |
+| GPIB / USB / LAN (VISA) | NI-VISA, or Keysight VISA. On Linux, link `libvisa32.so` at the installed `libvisa.so`, see [VISA on Linux](#visa-on-linux) |
 | DAQ (SPU power monitor) | NI-DAQmx |
-| FTDI-based OPM-150 over USB | FTDI D2XX driver |
+| FTDI-based OPM-150 over USB | FTDI D2XX driver (`libftd2xx.so` on Linux) |
 | OPM-150 over Ethernet (OP-ETH) | none, the library speaks UDP/TCP directly |
 
 NI-MAX is useful for confirming that an instrument is reachable before blaming
-your code. If no driver is present, device discovery returns zero devices rather
-than an error, see [Troubleshooting](#troubleshooting).
+your code; on Linux, `visaconf` and `pyvisa` do the same. If no driver is present,
+device discovery returns zero devices rather than an error, see
+[Troubleshooting](#troubleshooting).
+
+### VISA on Linux
+
+The binding asks the loader for `visa32`, which on Linux means `libvisa32.so`.
+NI-VISA and Keysight install the file as `libvisa.so`, so link the name at the
+installed library once per machine:
+
+```bash
+sudo ln -s /usr/lib/x86_64-linux-gnu/libvisa.so /usr/lib/x86_64-linux-gnu/libvisa32.so
+sudo ldconfig
+python -c "import ctypes; ctypes.CDLL('libvisa32.so')"   # proves the name resolves
+```
+
+FTDI and Ethernet instruments work without that link; only VISA instruments
+disappear from `GetDeviceNum()`.
 
 ## Quick start
 
 ### C++
 
-Link against the import library and include the header:
+Link against the import library on Windows, or the shared object on Linux, and
+include the header:
 
 ```cpp
 #include "SantecLibrary.hpp"
@@ -79,8 +99,15 @@ int main()
 ```
 
 `examples/cpp/` is a complete program: device discovery, TSL/PCU/OPM control,
-IL/PDL calculation and an interactive sweep. Build it with the project file after
-copying `lib/win-x64` next to it, or read it as a reference.
+IL/PDL calculation and an interactive sweep. Build it with the project file on
+Windows, or with g++ on Linux, after copying the binary next to it:
+
+```bash
+g++ -std=c++20 main.cpp -I include -L lib/linux-x64 -Wl,-rpath,'$ORIGIN' \
+    -l:Santec.Library.so -o main
+```
+
+Read it as a reference if you are starting your own project.
 
 ### .NET
 
@@ -107,7 +134,7 @@ measurement, export. Three more scripts use the same package and show the flows 
 grew out of: `python/ultra_high_resolution.py` (picometre steps, TSL + MPM + DAQ,
 interactive), `python/mpm_connection.py` and `python/tsl_connection.py` (single
 instrument checks), and `python/examples/agilent_integration.py` (TSL + Agilent
-8163B/8164A). They need the DLL beside them, in `lib/win-x64`, or via `--dll`.
+8163B/8164A). They need the library beside them, in `lib/<platform>`, or via `--dll`.
 
 ## Documentation
 
@@ -133,9 +160,9 @@ hit, so they are worth repeating:
 
 - The headers, examples, documentation and scripts in this repository are
   licensed under the [Apache License 2.0](LICENSE).
-- `Santec.Library.dll` and `Santec.Library.lib` in `lib/` are **not** open source.
-  They are licensed separately under the terms in
-  [`lib/win-x64/LICENSE.txt`](lib/win-x64/LICENSE.txt), which travel with them.
+- The binaries in `lib/` are **not** open source. Each is licensed under the
+  `LICENSE.txt` beside it, which travels with it; the win-x64 copy is
+  [here](lib/win-x64/LICENSE.txt), and the Linux one carries the same terms.
 - Third-party components are listed in
   [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md).
 
@@ -144,6 +171,7 @@ hit, so they are worth repeating:
 | Symptom | Cause |
 |---|---|
 | `GetDeviceNum()` returns 0 | No driver installed, or the instrument is on another subnet. Confirm with NI-MAX; for an OPM-150 over Ethernet use `DiscoverOPMDevices()`, which does not rely on VISA. |
+| VISA instruments are missing on Linux | `libvisa32.so` does not resolve, so the VISA binding reports itself unavailable. Link it at the installed `libvisa.so`, see [VISA on Linux](#visa-on-linux). |
 | Device discovery finds nothing over Ethernet | `GetDeviceNum` covers VISA, FTDI and DAQ transports. Ethernet-attached OPM-150s are found by `DiscoverOPMDevices()`. |
 | The process dies calling into the library | Check `GetLibraryVersion()` against the header version you compiled against; a mismatch means two different builds are on the machine. |
 | A scan returns `false` the first time | Expected when the laser diode was off: the call switches it on and reports no data. Retry. |
@@ -153,6 +181,7 @@ hit, so they are worth repeating:
 This is an SDK, not a supported product: see Article 19 of the binary licence.
 Bug reports and questions about the examples are welcome as GitHub issues; please
 include the output of `GetLibraryVersion()` and the relevant part of
-`%APPDATA%\Santec\SantecLibrary\logs`.
+`%APPDATA%\Santec\SantecLibrary\logs`, or `~/.config/Santec/SantecLibrary/logs` on
+Linux.
 
 Security issues: see [SECURITY.md](SECURITY.md).
