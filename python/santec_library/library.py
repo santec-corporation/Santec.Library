@@ -265,13 +265,16 @@ class Library:
             self._dll.FreeString(pointer)
 
     def check_version(self, expected: str | None = None) -> None:
-        """Warn when the DLL's version differs from ``expected`` (default: this package).
+        """Warn when the library reports a different release than ``expected``.
 
-        A mismatch is only a warning: the entry-point check in :meth:`__init__` is
-        what proves the two are actually compatible.
+        The comparison uses the release segment: a working build carries a local
+        label (``1.8.0.10+linux.1``) that the binary cannot repeat, because
+        ``GetLibraryVersion()`` reports the numeric file version. A mismatch is only
+        a warning: the entry-point check in :meth:`__init__` is what proves the two
+        are actually compatible.
         """
-        expected = expected or PACKAGE_VERSION
-        actual = self.version
+        expected = (expected or PACKAGE_VERSION).split("+")[0]
+        actual = self.version.split("+")[0]
         if actual and actual != expected:
             print(
                 f"warning: {os.path.basename(self.path)} reports version {actual}, "
