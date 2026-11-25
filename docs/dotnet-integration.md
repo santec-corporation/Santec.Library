@@ -15,8 +15,13 @@ copying.
 ```xml
 <ItemGroup>
   <None Include="lib\win-x64\Santec.Library.dll" CopyToOutputDirectory="PreserveNewest" />
+  <None Include="lib/linux-x64/Santec.Library.so" CopyToOutputDirectory="PreserveNewest"
+        Condition="'$(OS)' != 'Windows_NT'" />
 </ItemGroup>
 ```
+
+The declarations below do not change between platforms: `LibraryImport` resolves
+`Santec.Library` to `Santec.Library.dll` on Windows and to `Santec.Library.so` on Linux.
 
 2. Declare the entry points. `LibraryImport` (not `DllImport`) is the
    source-generated marshaller: it produces the stubs at compile time and AOT-safe
@@ -102,8 +107,9 @@ public struct ConnectionConfig
 ```
 
 The strings are marshalled by the runtime with the default charset, ANSI on
-Windows, which is fine for the ASCII product names and serial numbers you will
-see, but it is not UTF-8. Do not assume a non-ASCII product name survives.
+Windows and UTF-8 on Linux, which is fine for the ASCII product names and serial
+numbers you will see, but it is not UTF-8 on Windows. Do not assume a non-ASCII
+product name survives there.
 
 Reading a device list and releasing it:
 

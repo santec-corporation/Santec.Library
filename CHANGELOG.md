@@ -6,6 +6,26 @@ when an entry point's signature or behaviour changes.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+
+- `lib/linux-x64/Santec.Library.so`, built from the same sources as the Windows DLL and
+  attached to each release as `Santec.Library-<version>-linux-x64.zip`. The build needs
+  glibc 2.35 or later and `libstdc++` at run time. VISA instruments need `libvisa32.so`
+  to resolve to the installed `libvisa.so`, because the binding asks the loader for
+  `visa32`.
+- `tests/check_bundle.py --platform`: checks one platform of a checkout that carries
+  both, and `tests/abi_surface.py` reads an ELF dynamic symbol table as well as a PE
+  export directory.
+- The Python package resolves the platform's file name and `lib/<rid>`, so `Library()`
+  finds the shared object in `lib/linux-x64` the way it finds the DLL in `lib/win-x64`.
+
+### Changed
+
+- `verify.yml` gains a Linux job that checks the committed object when the checkout
+  carries one, and reports that there is nothing to check when it does not.
+
 ## [1.8.0.9] - 2026-11-19
 
 ### Added

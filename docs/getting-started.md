@@ -2,8 +2,8 @@
 
 This walks through a first swept-wavelength measurement: confirm the library
 loads, find the instruments, connect, configure the sweep, take a reference scan,
-take a measurement scan, and get the data out. It assumes Windows x64 and at
-least a TSL plus a power meter.
+take a measurement scan, and get the data out. It assumes a 64-bit Windows or
+Linux host and at least a TSL plus a power meter.
 
 The three language-specific documents go into more detail:
 
@@ -18,13 +18,15 @@ Every entry point is listed in the [ABI reference](abi-reference.md).
 The binary is in this repository:
 
 ```
-lib/win-x64/Santec.Library.dll     the library
+lib/win-x64/Santec.Library.dll     the library, Windows x64
 lib/win-x64/Santec.Library.lib     MSVC import library (C++ only)
+lib/linux-x64/Santec.Library.so    the library, Linux x64
 include/SantecLibrary.h/.hpp       declarations
 ```
 
-Copy `Santec.Library.dll` next to your executable, or somewhere your loader can
-find it. Nothing needs installing, and there is no registry entry or service.
+Copy the library for your platform next to your executable, or somewhere your
+loader can find it. Nothing needs installing, and there is no registry entry or
+service.
 
 Check that you have the right build:
 
@@ -45,11 +47,14 @@ probe in `DiscoverOPMDevices()`.
 
 If `count` is 0:
 
-- confirm the driver is installed (NI-VISA, Keysight VISA, NI-DAQmx, FTDI D2XX , 
-  see the table in the [README](../README.md));
+- confirm the driver is installed (NI-VISA, Keysight VISA, NI-DAQmx, FTDI D2XX, 
+  see the table in the [README](../README.md)); on Linux, also check that
+  `libvisa32.so` resolves to the installed `libvisa.so`, see
+  [VISA on Linux](../README.md#visa-on-linux);
 - check the instrument with NI-MAX or the vendor's tool;
-- call `EnableDebug()` and read `%APPDATA%\Santec\SantecLibrary\logs`: the library
-  reports why enumeration failed there, not through a return code.
+- call `EnableDebug()` and read the log: `%APPDATA%\Santec\SantecLibrary\logs` on
+  Windows, `~/.config/Santec/SantecLibrary/logs` on Linux. The library reports why
+  enumeration failed there, not through a return code.
 
 Then copy the configurations out and pick the ones you want:
 
