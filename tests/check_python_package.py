@@ -5,16 +5,16 @@ The package is the public Python API, and until now nothing exercised it: the
 existing harness scripts need instruments, and the native library cannot be
 published in this environment. This checks the parts that can be checked:
 
-  * importing the package does not load the DLL (no import-time side effects);
-  * every script in the tree imports without a DLL, and none of them still imports
-    the wrapper module that the package replaced;
+  * importing the package does not load the native library (no import-time side effects);
+  * every script in the tree imports without a native library, and none of them
+    imports ``santec_wrapper``;
   * every FlatBuffers accessor ``results.py`` names really exists on the
     generated classes, which is where a typo would otherwise survive until a
     measurement;
   * the vector helper works with and without numpy, and copes with a keyless
     sweep;
   * ``resolve_dll`` honours the documented search order;
-  * loading an older DLL fails with the list of missing entry points rather than a
+  * loading an older library fails with the list of missing entry points rather than a
     crash.
 
 What it cannot check: parsing a real scan payload, which needs a measurement.
@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -42,10 +43,17 @@ PACKAGE_DIR = REPO / "python"
 # output under Santec.Library/bin holds a current library, which exports everything and
 # would report the check's own failure against a good binary.
 STUB_C = """
+#ifdef _WIN32
 #include <windows.h>
 __declspec(dllexport) int SantecLibraryStub(void) { return 0; }
 BOOL WINAPI DllMain(HINSTANCE h, DWORD reason, LPVOID reserved) { return TRUE; }
+#else
+int SantecLibraryStub(void) { return 0; }
+#endif
 """
+
+#: A path that names no file: the package must not load anything when it is imported.
+MISSING_LIBRARY = os.path.join("definitely", "not", "here", "Santec.Library")
 
 def run_isolated(code: str, env: dict | None = None, cwd: str | None = None) -> subprocess.CompletedProcess:
     environment = dict(os.environ)
@@ -63,13 +71,28 @@ def newest(paths) -> Path | None:
     return found[-1] if found else None
 
 
-def build_stub_dll(directory: Path) -> Path | None:
-    """Build an incomplete Santec.Library.dll, or None when no C toolchain is available.
+def build_stub_library(directory: Path) -> Path | None:
+    """Build an incomplete Santec.Library binary, or None when no C toolchain is available.
 
-    The compiler is called by absolute path with INCLUDE and LIB derived from the tools
-    layout. Borrowing vcvars64.bat for this does not work: it exits non-zero when this
-    script runs it, and MSVC 14.44 and later leave the standard headers to INCLUDE.
+    On Windows the compiler is called by absolute path with INCLUDE and LIB derived from
+    the tools layout. Borrowing vcvars64.bat for this does not work: it exits non-zero
+    when this script runs it, and MSVC 14.44 and later leave the standard headers to
+    INCLUDE. Elsewhere the system compiler is enough, because the stub includes nothing.
     """
+    from santec_library.library import DLL_NAME
+
+    source = directory / "santec_library_stub.c"
+    source.write_text(STUB_C, encoding="ascii")
+    target = directory / DLL_NAME
+
+    if sys.platform != "win32":
+        compiler = shutil.which("cc") or shutil.which("gcc") or shutil.which("clang")
+        if compiler is None:
+            return None
+        built = subprocess.run([compiler, "-shared", "-fPIC", "-O1", "-o", str(target), str(source)],
+                               capture_output=True, text=True, cwd=directory)
+        return target if built.returncode == 0 and target.is_file() else None
+
     vswhere = Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / \
         "Microsoft Visual Studio" / "Installer" / "vswhere.exe"
     if not vswhere.is_file():
@@ -97,9 +120,6 @@ def build_stub_dll(directory: Path) -> Path | None:
     environment["INCLUDE"] = ";".join(include)
     environment["LIB"] = ";".join(library)
 
-    source = directory / "santec_library_stub.c"
-    source.write_text(STUB_C, encoding="ascii")
-    target = directory / "Santec.Library.dll"
     built = subprocess.run([str(compiler), "/nologo", "/LD", "/O1", str(source), f"/Fe{target}"],
                            capture_output=True, text=True, cwd=directory, env=environment)
     return target if built.returncode == 0 and target.is_file() else None
@@ -113,15 +133,15 @@ def main() -> int:
     if str(PACKAGE_DIR) not in sys.path:
         sys.path.insert(0, str(PACKAGE_DIR))
 
-    # 1. Importing must not touch the DLL: do it in a process whose only DLL
+    # 1. Importing must not touch the native library: do it in a process whose only
     #    candidate is a path that does not exist.
     result = run_isolated(
         "import santec_library, sys;"
         "print('imported', santec_library.PACKAGE_VERSION);"
         "print('exports:', sorted(n for n in dir(santec_library) if not n.startswith('_'))[:6])",
-        env={"SANTEC_LIBRARY_DLL": "Z:/definitely/not/here/Santec.Library.dll"},
+        env={"SANTEC_LIBRARY_DLL": MISSING_LIBRARY},
     )
-    report("importing the package does not load the DLL", result.returncode == 0,
+    report("importing the package does not load the native library", result.returncode == 0,
            (result.stdout + result.stderr).strip().splitlines()[0] if result.stdout or result.stderr else "")
 
     # 2. Every FlatBuffers accessor results.py names must exist in the bindings.
@@ -205,12 +225,12 @@ print("helper checks passed")
             "module = importlib.util.module_from_spec(spec)\n"
             "spec.loader.exec_module(module)\n"
             "print('imported')\n",
-            env={"SANTEC_LIBRARY_DLL": "Z:/definitely/not/here/Santec.Library.dll"},
+            env={"SANTEC_LIBRARY_DLL": MISSING_LIBRARY},
         )
         if "imported" not in imported.stdout:
             last = (imported.stderr or imported.stdout).strip().splitlines()
             broken.append(f"{path.name}: {last[-1] if last else 'no output'}")
-    report(f"all {len(scripts)} scripts import without a DLL", not broken, "; ".join(broken))
+    report(f"all {len(scripts)} scripts import without a native library", not broken, "; ".join(broken))
 
     stale = sorted(
         path.name
@@ -222,14 +242,14 @@ print("helper checks passed")
     # 5. resolve_dll follows the documented order.
     with tempfile.TemporaryDirectory() as empty_dir:
         missing = run_isolated("import santec_library; santec_library.Library()", cwd=empty_dir)
-        report("a missing DLL raises LibraryNotFound, not OSError",
+        report("a missing library raises LibraryNotFound, not OSError",
                "LibraryNotFound" in missing.stderr and missing.returncode != 0,
                missing.stderr.strip().splitlines()[-1] if missing.stderr else "")
 
     with tempfile.TemporaryDirectory() as fixture_dir:
-        stub = build_stub_dll(Path(fixture_dir))
+        stub = build_stub_library(Path(fixture_dir))
         if stub is None:
-            print("  [--] skipping the older-DLL check: no C toolchain available")
+            print("  [--] skipping the older-library check: no C toolchain available")
         else:
             stale = run_isolated(
                 "import santec_library\n"
@@ -239,7 +259,7 @@ print("helper checks passed")
                 "    print('AbiMismatch:', error)\n",
                 env={"SANTEC_LIBRARY_DLL": str(stub)},
             )
-            report("an older DLL fails with the missing entry points listed",
+            report("an older library fails with the missing entry points listed",
                    "AbiMismatch" in stale.stdout,
                    stale.stdout.strip() or (stale.stderr.strip().splitlines() or [""])[-1])
 

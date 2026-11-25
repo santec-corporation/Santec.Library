@@ -1,0 +1,196 @@
+SANTEC SOFTWARE LICENSE AGREEMENT
+
+BY DOWNLOADING, COPYING OR USING THE SOFTWARE, YOU AGREE TO BE BOUND BY THE
+TERMS OF THIS AGREEMENT.
+
+santec LIS Corporation (the "Licensor") and you (the "Licensee") hereby agree as
+follows:
+
+Article 1 (Definitions)
+
+1. "Software" means the binary program files distributed by the Licensor under
+   this Agreement, in particular Santec.Library.dll and Santec.Library.lib,
+   together with any accompanying files, in the version with which this
+   Agreement is distributed.
+
+2. "Manuals" means the documentation, headers and examples provided by the
+   Licensor with the Software.
+
+3. "Santec Products" means the products or devices of the Licensor or its
+   affiliates designed to be used in combination with the Software.
+
+4. "Licensee's Application" means a software product of the Licensee that uses
+   the Software to control or measure Santec Products.
+
+5. "Intellectual Property Rights" means copyrights, patents and any other
+   intellectual property rights.
+
+Article 2 (License)
+
+The Licensor grants to the Licensee a non-exclusive, non-transferable,
+royalty-free, worldwide license to:
+
+(1) install and use the Software, and to duplicate and use the Manuals, solely
+    for, or in combination with, Santec Products;
+
+(2) reproduce the Software as necessary to develop, test, build and back up the
+    Licensee's Application; and
+
+(3) distribute the Software as an embedded component of the Licensee's
+    Application, provided that the Software is not distributed as a standalone
+    product or SDK and that this Agreement and the notices required by Article
+    15 accompany the distribution.
+
+Article 3 (Prohibition of Sublicensing)
+
+The Licensee may not sublicense the rights granted under this Agreement to any
+third party, except as expressly permitted by Article 2(3).
+
+Article 4 (Intellectual Property Rights)
+
+The Intellectual Property Rights related to the Software shall be retained by
+the Licensor or its licensors. The Intellectual Property Rights related to the
+Software shall not be transferred from the Licensor to the Licensee in any way
+whatsoever.
+
+Article 5 (Prohibited Matters)
+
+1. The Licensee shall not distribute, sell, rent, lease or sublicense the
+   Software as a standalone product, and shall not distribute it other than as
+   permitted by Article 2(3).
+
+2. The Licensee shall neither reverse-engineer nor decompile the Software,
+   except to the extent that applicable law cannot validly prohibit it.
+
+3. The Software shall be used exclusively for, and in combination with, Santec
+   Products. The Licensee shall not use the Software for, or in combination
+   with, any products other than Santec Products.
+
+4. The Licensee shall not delete or alter copyright notices or other legends of
+   the Licensor or any licensors to the Licensor included in the Software.
+
+Article 6 (Exclusion of Warranties)
+
+1. The Software is provided as-is without any warranties. All implied
+   warranties, including but not limited to implied warranties of quality and/or
+   fitness for purpose (in all cases) are hereby excluded to the fullest extent
+   permitted by law.
+
+2. The Licensee shall acknowledge and agree that the Software has not been
+   developed to meet individual requirements of the Licensee and that the
+   Software may not be uninterrupted or free of bugs or errors.
+
+3. The Licensor hereby excludes any warranties of non-infringement. The Licensor
+   shall not be liable for damages, inconveniences, injunction against use of
+   the Software or any other disadvantages of the Licensee arising from the
+   Software's infringing third parties' Intellectual Property Rights unless such
+   infringement is caused by gross negligence or intentional misconduct of the
+   Licensor.
+
+4. The Software controls optical instruments. The Licensee is responsible for
+   the safe operation of the instruments it drives and for the measurement
+   parameters it sets, and shall observe the safety instructions the Licensor
+   publishes for those instruments.
+
+Article 7 (Limitation of Liabilities)
+
+1. Notwithstanding anything to the contrary in this Agreement, the aggregate
+   liabilities of the Licensor in connection with the Software shall not exceed
+   100 USD.
+
+2. Neither party shall be liable for any consequential, indirect or special
+   losses or damages.
+
+Article 8 (Term)
+
+This Agreement shall continue and remain valid indefinitely until and unless
+terminated in accordance with the following Article.
+
+Article 9 (Termination)
+
+The Licensor may terminate the License immediately in the event that:
+
+(i)   The Licensee breaches any obligation hereunder, and such breach is not
+      remedied within thirty (30) days after receipt of written notice
+      specifying such breach;
+
+(ii)  The Licensee ceases to function as a going concern, or to conduct its
+      operations in the normal course of business; or
+
+(iii) Receivership, bankruptcy or any other insolvency proceedings are commenced
+      by or against the Licensee, or an assignment for the benefit of creditors,
+      voluntary winding up or liquidation of its business by the Licensee
+      occurs, whether or not with the aid and assistance of any court.
+
+Article 10 (Post-Termination Measures)
+
+1. On termination the Licensee shall cease all use of the Software and cease
+   distributing it, and shall remove it from future releases of the Licensee's
+   Application. Copies already delivered to end users as part of the Licensee's
+   Application may continue to be used, provided the Licensee is not in breach
+   of Article 5.
+
+2. The Licensee shall, on request, confirm in writing that it has complied with
+   paragraph 1.
+
+Article 11 (No Assignment)
+
+Either party shall not, without the prior written consent of the other party,
+assign or transfer to a third party all or part of its rights and obligations
+under this Agreement, or encumber all or part of this Agreement as collateral.
+The Licensee may, however, transfer this Agreement together with the Licensee's
+Application or its business relating to it, provided the transferee accepts this
+Agreement in writing.
+
+Article 12 (Entire Agreement)
+
+This Agreement constitutes the entire agreement and understanding between the
+parties with respect to this Agreement and supersedes all prior agreements and
+understandings, whether written or oral, between the parties.
+
+Article 13 (Governing Law and Jurisdiction)
+
+1. This Agreement is governed by and construed in accordance with the laws of
+   Japan.
+
+2. Nagoya District Court in Japan will be the exclusive jurisdictional court of
+   first instance to adjudicate any dispute arising under or in connection with
+   this Agreement.
+
+Article 14 (Consultation in Good Faith)
+
+Any matters not set forth in this Agreement or any disputes over the
+interpretation of any provision of this Agreement shall be resolved by the
+parties amicably through mutual consultation in good faith.
+
+Article 15 (Third-Party Components)
+
+The Software includes third-party components licensed under their own terms,
+listed in the accompanying THIRD-PARTY-NOTICES.md, which forms part of this
+Agreement. Nothing in this Agreement limits the Licensee's rights under those
+terms, and the Licensee shall preserve the notices they require.
+
+Article 16 (Export Control)
+
+The Licensee shall comply with all applicable export control and sanctions laws
+and regulations, and shall not export, re-export or transfer the Software in
+violation of them.
+
+Article 17 (Relationship to the Repository Content)
+
+This Agreement applies to the Software only. The headers, examples, scripts and
+documentation distributed alongside it are licensed under the Apache License 2.0,
+as stated in the repository.
+
+Article 18 (Versions and Updates)
+
+This Agreement applies to the version of the Software with which it is
+distributed. A later version may be distributed under updated terms; continued
+use of that version constitutes acceptance of them.
+
+Article 19 (No Support)
+
+The Licensor is not obliged to provide support, maintenance, updates or new
+releases, unless separately agreed in writing.
+
+(End)
