@@ -57,8 +57,59 @@ jobs:
         python tools/package_examples.py --version ${{ steps.version.outputs.version }} --output dist
         if (-not (Get-ChildItem dist -Filter *.zip)) { throw 'no archives were written' }
 
-    # One archive per example, named Santec.Library-<version>-<example>.zip. The
-    # release is created on the first run and its assets replaced on a re-run.
+    # This workflow packages the SDK too: one archive for each platform directory in
+    # lib/, laid out as lib/<platform>, include and python.
+    - name: Package the SDK
+      run: |
+        $ErrorActionPreference = 'Stop'
+        $version = '${{ steps.version.outputs.version }}'
+        New-Item -ItemType Directory -Force -Path dist | Out-Null
+
+        foreach ($platform in Get-ChildItem lib -Directory) {
+          $rid = $platform.Name
+          if (-not (Test-Path "lib/$rid/versions.json")) { continue }
+
+          $stage = "sdk/Santec.Library-$version-$rid"
+          New-Item -ItemType Directory -Force -Path "$stage/lib", "$stage/include" | Out-Null
+          Copy-Item "lib/$rid" "$stage/lib/$rid" -Recurse
+          Copy-Item include/* "$stage/include" -Recurse
+          Copy-Item python "$stage/python" -Recurse
+          Get-ChildItem "$stage/python" -Recurse -Directory -Filter '__pycache__' |
+            Remove-Item -Recurse -Force
+
+          $binary = if ($rid -like 'win*') { 'Santec.Library.dll' } else { 'Santec.Library.so' }
+          $title = "Santec.Library $version ($rid)"
+          $lines = @(
+            $title,
+            ('=' * $title.Length),
+            '',
+            "lib/$rid/$binary   the native library; copy it next to your application"
+          )
+          if ($rid -like 'win*') {
+            $lines += "lib/$rid/Santec.Library.lib   MSVC import library, for C++ callers"
+          }
+          $lines += @(
+            "lib/$rid/LICENSE.txt    the terms this binary is licensed under",
+            "lib/$rid/versions.json   version, ABI version, build commit, supported OS, file hashes",
+            'include/SantecLibrary.h     C declarations',
+            'include/SantecLibrary.hpp   C++ declarations',
+            'python/                     the Python package, the examples and the FlatBuffers bindings',
+            '',
+            "The Python examples load the native library with ctypes: keep lib/$rid beside",
+            'the script, or pass --dll <path>.'
+          )
+          $lines -join "`n" | Set-Content -Encoding utf8 "$stage/README.txt"
+
+          Compress-Archive -Path "$stage/*" -DestinationPath "dist/Santec.Library-$version-$rid.zip" -Force
+        }
+
+        if (-not (Get-ChildItem dist -Filter 'Santec.Library-*-x64.zip')) {
+          throw 'no SDK archive was written: the checkout carries no lib/<platform>/versions.json'
+        }
+
+    # One archive per example, named Santec.Library-<version>-<example>.zip, beside one
+    # SDK archive per platform. This workflow creates the release on the first run and
+    # replaces its assets on a re-run.
     - name: Publish the release
       uses: softprops/action-gh-release@v3
       with:
