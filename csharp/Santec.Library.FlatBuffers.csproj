@@ -7,12 +7,10 @@
 		Framework 4.6.1 and later, VB.NET and every modern .NET can consume, and
 		reading a payload needs nothing a newer target adds.
 
-		The runtime comes from the Google.FlatBuffers package rather than a vendored
-		copy: the generated classes call FlatBufferConstants.FLATBUFFERS_<flatc
-		version>(), and the package declares only the version it was built with, so
-		the two versions have to match. The generator's check mode enforces that,
-		rather than letting a flatc or package bump land alone and fail in a
-		consumer's build.
+		The runtime comes from the Google.FlatBuffers package, not a vendored copy.
+		The package's newest version is older than the flatc that generates the
+		classes, so the generator rewrites the FlatBufferConstants version guard in
+		them to the version pinned here. Bump the two together, with the generator.
 	-->
 	<PropertyGroup>
 		<TargetFramework>netstandard2.0</TargetFramework>
@@ -21,10 +19,12 @@
 		<ImplicitUsings>disable</ImplicitUsings>
 		<Nullable>disable</Nullable>
 		<GenerateDocumentationFile>false</GenerateDocumentationFile>
+		<!-- The AOT analyzers do not run on netstandard2.0. -->
+		<IsAotCompatible>false</IsAotCompatible>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Google.FlatBuffers" Version="25.12.19" />
+		<PackageReference Include="Google.FlatBuffers" Version="25.2.10" />
 	</ItemGroup>
 
 </Project>

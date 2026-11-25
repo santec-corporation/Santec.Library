@@ -13,7 +13,7 @@ public struct PDLResult : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
-  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_25_12_19(); }
+  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_25_2_10(); }
   public static PDLResult GetRootAsPDLResult(ByteBuffer _bb) { return GetRootAsPDLResult(_bb, new PDLResult()); }
   public static PDLResult GetRootAsPDLResult(ByteBuffer _bb, PDLResult obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __p = new Table(_i, _bb); }

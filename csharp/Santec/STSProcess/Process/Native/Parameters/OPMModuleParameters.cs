@@ -13,7 +13,7 @@ public struct OPMModuleParameters : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
-  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_25_12_19(); }
+  public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_25_2_10(); }
   public static OPMModuleParameters GetRootAsOPMModuleParameters(ByteBuffer _bb) { return GetRootAsOPMModuleParameters(_bb, new OPMModuleParameters()); }
   public static OPMModuleParameters GetRootAsOPMModuleParameters(ByteBuffer _bb, OPMModuleParameters obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __p = new Table(_i, _bb); }

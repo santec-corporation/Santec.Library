@@ -15,7 +15,7 @@ Reference the project (or the built `Santec.Library.FlatBuffers.dll`) and add th
 runtime, which is not vendored:
 
 ```xml
-<PackageReference Include="Google.FlatBuffers" Version="25.12.19" />
+<PackageReference Include="Google.FlatBuffers" Version="25.2.10" />
 ```
 
 The bytes arrive from an entry point such as `ReferenceScan` or `MeasurementScan`.
@@ -60,7 +60,7 @@ The generator runs the submodule's own `flatc.exe`, so the C# tree here and the
 Python bindings in `python/Santec` are always compiled by the same compiler. It needs
 the submodule (`git submodule update --init`) and no network.
 
-## The version pin is not free
+## The runtime version guard
 
 flatc stamps its version into every generated type:
 
@@ -68,7 +68,8 @@ flatc stamps its version into every generated type:
 public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_25_12_19(); }
 ```
 
-The runtime only declares the version it was built with, so the
-`Google.FlatBuffers` pin and the flatc that produced `Santec/` have to match. A
-`flatc` bump without a package bump, or the reverse, fails `--check` with a message
-naming both versions. Bump them together.
+The runtime declares only its own version, and the newest published
+`Google.FlatBuffers` is 25.2.10, older than the submodule's flatc. The generator
+rewrites that call to the version this project pins, so the generated classes
+compile against the runtime they ship with. Change the pin and regenerate, and the
+guard follows; `--check` fails when the tree and the pin disagree.
