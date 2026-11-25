@@ -22,8 +22,11 @@ REPO = Path(__file__).resolve().parent.parent
 #: The sibling names a public checkout can carry, in the order the tools try them.
 SIBLING_NAMES = ("Santec.Library.Public", "Santec.Library", "public")
 
-#: How a release version is spelled: two to four dot-separated numbers.
-VERSION_PATTERN = re.compile(r"^\d+(?:\.\d+){1,3}$")
+#: How a release version is spelled: two to four dot-separated numbers, optionally
+#: followed by a local label that names the build (``1.8.0.10+linux.1``). The label
+#: marks which build of a release this is, and version_tuple() ignores it when it
+#: compares two versions.
+VERSION_PATTERN = re.compile(r"^\d+(?:\.\d+){1,3}(?:\+[0-9A-Za-z][0-9A-Za-z.-]*)?$")
 
 #: A tag carries a leading v or V that the version inside it does not.
 TAG_PREFIX = re.compile(r"^[vV]")
@@ -51,9 +54,18 @@ def public_root(sentinel: str) -> Path:
     return candidates[0] if candidates else REPO.parent / "public"
 
 
+def base_version(version: str) -> str:
+    """The release part of a version, without its local label."""
+    return version.split("+", 1)[0]
+
+
 def version_tuple(version: str) -> tuple[int, ...]:
-    """A version as comparable numbers, so 1.8 and 1.8.0.0 name one release."""
-    parts = [int(part) for part in version.split(".")]
+    """A version as comparable numbers, so 1.8 and 1.8.0.0 name one release.
+
+    version_tuple() ignores the local label, which names a build of a release:
+    ``1.8.0.10+linux.1`` compares as ``1.8.0.10``.
+    """
+    parts = [int(part) for part in base_version(version).split(".")]
     return tuple(parts + [0] * (4 - len(parts)))
 
 

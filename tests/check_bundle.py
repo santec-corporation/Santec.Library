@@ -234,7 +234,7 @@ def pyproject_version(root: Path) -> str:
 def write_manifest(root: Path, version: str, built_from: str, platform: str) -> int:
     """Write lib/<platform>/versions.json, the compatibility matrix the bundle ships."""
     if not VERSION_PATTERN.match(version):
-        print(f"{version} is not a release version: expected two to four dot-separated numbers")
+        print(f"{version} is not a release version: expected two to four dot-separated numbers and an optional +label")
         return 1
 
     hashed = hashed_files(platform)

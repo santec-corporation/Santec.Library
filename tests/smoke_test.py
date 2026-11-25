@@ -99,8 +99,11 @@ def main() -> int:
         lib.FreeString(ptr)
 
     if args.expect_version:
-        expected = args.expect_version.lstrip("vV")
-        check(f"the binary reports the released version {expected}", version == expected, version)
+        # The binary reports its numeric file version, so the check drops a local label
+        # (1.8.0.10+linux.1) from both sides before comparing.
+        expected = args.expect_version.lstrip("vV").split("+", 1)[0]
+        reported = version.split("+", 1)[0]
+        check(f"the binary reports the released version {expected}", reported == expected, version)
 
     # 2. Device enumeration works without any instrument attached.
     count = lib.GetDeviceNum()

@@ -30,7 +30,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-VERSION = re.compile(r"^\d+(?:\.\d+){1,3}$")
+#: A release version, optionally labelled with the build (1.8.0.10+linux.1).
+VERSION = re.compile(r"^\d+(?:\.\d+){1,3}(?:\+[0-9A-Za-z][0-9A-Za-z.-]*)?$")
 
 #: Build residue that must never travel. examples/csharp/ has a committed obj/
 #: directory, and anybody who built an example has more.
@@ -208,7 +209,7 @@ def main() -> int:
     root = args.root.resolve()
     version = args.version or version_of(root)
     if not VERSION.match(version):
-        raise SystemExit(f"{version} is not a release version: expected two to four dot-separated numbers")
+        raise SystemExit(f"{version} is not a release version: expected two to four dot-separated numbers and an optional +label")
 
     examples = collect(root, version)
     args.output.mkdir(parents=True, exist_ok=True)
