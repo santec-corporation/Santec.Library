@@ -24,3 +24,6 @@ compile time, which is what keeps the example AOT-safe. Two details in the
 declarations are easy to get wrong: a `bool` return needs
 `[return: MarshalAs(UnmanagedType.Bool)]` so the 4-byte Windows `BOOL` matches, and
 `SetMPMChannel` takes the dynamic range as a `byte`.
+
+A VB.NET version of the same sample is in [`examples/vb/`](../vb/README.md). It
+cannot use `LibraryImport`, so it shows the `DllImport` form of every declaration.

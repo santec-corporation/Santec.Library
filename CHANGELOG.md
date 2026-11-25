@@ -10,6 +10,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `examples/vb/`: the TSL sample in VB.NET. It declares the entry points with
+  `DllImport`, because `LibraryImport` needs a partial method and VB allows partial
+  methods only for `Sub`. The four language rules that change the declarations are in
+  [`docs/dotnet-integration.md`](docs/dotnet-integration.md#vbnet). `verify.yml` builds
+  it and `package_examples.py` ships it.
 - `lib/linux-x64/Santec.Library.so`, built from the same sources as the Windows DLL and
   attached to each release as `Santec.Library-<version>-linux-x64.zip`. The build needs
   glibc 2.35 or later and `libstdc++` at run time. VISA instruments need `libvisa32.so`

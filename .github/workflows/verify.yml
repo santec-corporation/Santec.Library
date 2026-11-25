@@ -87,6 +87,11 @@ jobs:
         dotnet build examples/csharp/Santec.Library.Sample.TSL.Controller.csproj -c Release
         if ($LASTEXITCODE -ne 0) { throw 'the C# example does not build.' }
 
+    - name: Build the VB.NET example
+      run: |
+        dotnet build examples/vb/Santec.Library.Sample.TSL.Controller.vbproj -c Release
+        if ($LASTEXITCODE -ne 0) { throw 'the VB.NET example does not build.' }
+
     - name: Compile the C header as C17
       run: |
         $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
