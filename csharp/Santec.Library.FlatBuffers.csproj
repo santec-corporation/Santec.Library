@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!--
+		tools/generate_csharp_bindings.py generates the classes under Santec/ from
+		the private submodule's schemas and vendors them here, so this folder builds
+		without the submodule. They target netstandard2.0: that is what .NET
+		Framework 4.6.1 and later, VB.NET and every modern .NET can consume, and
+		reading a payload needs nothing a newer target adds.
+
+		The runtime comes from the Google.FlatBuffers package, not a vendored copy.
+		The package's newest version is older than the flatc that generates the
+		classes, so the generator rewrites the FlatBufferConstants version guard in
+		them to the version pinned here. Bump the two together, with the generator.
+	-->
+	<PropertyGroup>
+		<TargetFramework>netstandard2.0</TargetFramework>
+		<AssemblyName>Santec.Library.FlatBuffers</AssemblyName>
+		<!-- The generated tree carries no XML documentation and no nullable annotations. -->
+		<ImplicitUsings>disable</ImplicitUsings>
+		<Nullable>disable</Nullable>
+		<GenerateDocumentationFile>false</GenerateDocumentationFile>
+		<!-- The AOT analyzers do not run on netstandard2.0. -->
+		<IsAotCompatible>false</IsAotCompatible>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Google.FlatBuffers" Version="25.2.10" />
+	</ItemGroup>
+
+</Project>
