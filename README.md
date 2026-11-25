@@ -3,7 +3,7 @@
 SDK for controlling Santec optical instruments in swept-wavelength Insertion Loss
 (IL) and Polarization Dependent Loss (PDL) measurements. This repository carries
 the prebuilt native library, the C/C++ header it exports, and worked examples for
-C++, .NET and Python.
+C++, C#, VB.NET and Python.
 
 | What you get | Where |
 |---|---|
@@ -11,7 +11,7 @@ C++, .NET and Python.
 | `Santec.Library.so` (linux-x64) | `lib/linux-x64/` |
 | C and C++ declarations | `include/SantecLibrary.h`, `include/SantecLibrary.hpp` |
 | Entry-point reference (generated from the header) | `docs/abi-reference.md` |
-| Examples | `examples/cpp/`, `examples/csharp/`, and the Python scripts in `python/` |
+| Examples | `examples/cpp/`, `examples/csharp/`, `examples/vb/`, and the Python scripts in `python/` |
 | Python bindings and FlatBuffers result types | `python/` |
 | Version, build commit and file hashes | `lib/<platform>/versions.json` |
 
@@ -112,7 +112,7 @@ Read it as a reference if you are starting your own project.
 ### .NET
 
 There is no managed wrapper assembly: declare the entry points you use, as
-`examples/csharp/` does.
+`examples/csharp/` and `examples/vb/` do.
 
 ```csharp
 [LibraryImport("Santec.Library", EntryPoint = "GetDeviceNum")]

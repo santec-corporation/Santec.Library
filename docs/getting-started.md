@@ -181,7 +181,8 @@ documents the object graph.
 
 ## Next
 
-- Run one of the examples: `examples/cpp/`, `examples/csharp/`, `python/`.
+- Run one of the examples: `examples/cpp/`, `examples/csharp/`, `examples/vb/`,
+  `python/`.
 - Read the [ABI reference](abi-reference.md) for the entry point you need.
 - If something returns `false` or `0` and the log explains nothing, the
   [troubleshooting table](../README.md#troubleshooting) covers the usual causes.

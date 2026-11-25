@@ -115,9 +115,9 @@ the ones in this archive, so it builds without the repository.
 
 def managed_example(root: Path, directory: Path, version: str) -> Example:
     """A .NET project: the native DLL is copied next to the executable."""
-    project = next(directory.glob("*.csproj"), None)
+    project = next(directory.glob("*.csproj"), None) or next(directory.glob("*.vbproj"), None)
     if project is None:
-        raise SystemExit(f"{directory} has no .csproj")
+        raise SystemExit(f"{directory} has no .csproj or .vbproj")
     members = files_under(root, directory.relative_to(root).as_posix())
     members += sdk_library(root, SDK_LIBRARY)
     readme = f"""Santec.Library {version} - .NET example: {directory.name}
@@ -173,7 +173,7 @@ def collect(root: Path, version: str) -> list[Example]:
             continue
         if next(directory.glob("*.vcxproj"), None):
             examples.append(native_example(root, directory, version))
-        elif next(directory.glob("*.csproj"), None):
+        elif next(directory.glob("*.csproj"), None) or next(directory.glob("*.vbproj"), None):
             examples.append(managed_example(root, directory, version))
 
     for pattern in ("python/*.py", "python/examples/*.py"):

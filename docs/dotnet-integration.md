@@ -5,8 +5,8 @@ declares the entry points it uses. That keeps the managed side honest, the
 declarations are checked against the ABI by the compiler, and avoids a wrapper
 whose version has to track the library's.
 
-`examples/csharp/` is a working project; this document explains the parts worth
-copying.
+`examples/csharp/` and `examples/vb/` are working projects; this document explains
+the parts worth copying.
 
 ## Setup
 
@@ -86,6 +86,31 @@ of the entry points from the [ABI reference](abi-reference.md).
 The declarations above are `internal` so that the examples below can call them
 from another class. If your public wrapper methods live in the same type, make
 them `private` instead, the generated stubs work either way.
+
+## VB.NET
+
+`examples/vb/` runs the same sample in VB.NET. Four language rules change the
+declarations.
+
+`LibraryImport` generates its stubs from a partial method, and VB allows partial
+methods only for `Sub`. Declare the entry points with `DllImport`:
+
+```vb
+<DllImport("Santec.Library", EntryPoint:="GetDeviceNum")>
+Private Function GetDeviceNum() As Integer
+End Function
+
+<DllImport("Santec.Library", EntryPoint:="SetConnection")>
+Private Function SetConnection(devPtr As IntPtr) As <MarshalAs(UnmanagedType.Bool)> Boolean
+End Function
+```
+
+The `bool` marshalling goes on the return type, because VB has no `return:` attribute
+target. `Declare` takes a string literal for `Lib`, so a constant only works with
+`DllImport`. VB has no `stackalloc`: allocate the device buffer with
+`Marshal.AllocHGlobal` and free it in a `Finally`. VB has no pointer types either, so
+`GetTSL2PowerLoggingData(double** data, int* length)` takes `ByRef data As IntPtr,
+ByRef length As Integer`, and `Marshal.Copy` moves the samples out.
 
 ## ConnectionConfig
 
