@@ -1,12 +1,12 @@
 {
-  "version": "1.8.0.10+linux.1",
+  "version": "1.8.0.10+vb.net.1",
   "abi": 2,
   "platform": "linux-x64",
   "supportedOs": "Linux x64, glibc 2.35 or later",
-  "builtFrom": "e355ced3944f3a00d3973939f76fbf5d31a43c8a",
-  "pythonPackage": "1.8.0.10+linux.1",
+  "builtFrom": "fd7edddab466eca199e928cf7f1c62d2f8d11f45",
+  "pythonPackage": "1.8.0.10+vb.net.1",
   "files": {
-    "lib/linux-x64/Santec.Library.so": "3ef7fd0cd07a0380694f8bf38b0599cca66e86121cde6d44e49c27c492191359",
+    "lib/linux-x64/Santec.Library.so": "0184e269c10b2f8f2cdb521b47b79a7e309732c3dbd19b11ad03f8f84a94182d",
     "include/SantecLibrary.h": "afca6c0fde68b2a15fec196a3bdf221104b25c0cae7805c51f5bfaa1ff310ab7",
     "include/SantecLibrary.hpp": "0b20b7abd03728319b09a14ac2242e06be820a35e9f1978e6ab719810d8e7c2d"
   }
