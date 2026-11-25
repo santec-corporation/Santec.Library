@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net10.0</TargetFramework>
+		<OptionStrict>On</OptionStrict>
+		<OptionExplicit>On</OptionExplicit>
+		<OptionInfer>On</OptionInfer>
+		<AssemblyName>Santec.Library.Sample.IL.Sweep</AssemblyName>
+		<RootNamespace>Santec.Library.Sample.IL.Sweep</RootNamespace>
+	</PropertyGroup>
+
+	<!--
+		The generated accessors for the FlatBuffers payloads. They target .NET
+		Standard 2.0 and bring the Google.FlatBuffers runtime in transitively.
+	-->
+	<ItemGroup>
+		<ProjectReference Include="..\..\csharp\Santec.Library.FlatBuffers.csproj" />
+	</ItemGroup>
+
+	<!--
+		There is no managed package to reference: the example declares the entry
+		points it calls and loads the committed native library.
+	-->
+	<ItemGroup>
+		<None Include="..\..\lib\win-x64\Santec.Library.dll"
+		      Link="Santec.Library.dll"
+		      CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
+</Project>

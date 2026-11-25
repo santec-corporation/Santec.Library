@@ -10,6 +10,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `csharp/`: the generated FlatBuffers accessors for the scan payloads, targeting
+  .NET Standard 2.0 so .NET Framework 4.6.1 and later, VB.NET and modern .NET can
+  read them. `Google.FlatBuffers` supplies the runtime.
+- `examples/vb-il-sweep/`: an insertion-loss sweep that parses the returned
+  `SweepResultSet` with those classes and prints the IL range and the first points.
+  Its archive carries `csharp/` because the project references it.
 - `examples/vb/`: the TSL sample in VB.NET. It declares the entry points with
   `DllImport`, because `LibraryImport` needs a partial method and VB allows partial
   methods only for `Sub`. The four language rules that change the declarations are in
