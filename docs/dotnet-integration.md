@@ -5,8 +5,8 @@ declares the entry points it uses. That keeps the managed side honest, the
 declarations are checked against the ABI by the compiler, and avoids a wrapper
 whose version has to track the library's.
 
-`examples/csharp/` and `examples/vb/` are working projects; this document explains
-the parts worth copying.
+`examples/csharp/`, `examples/vb/` and `examples/vb-il-sweep/` are working projects;
+this document explains the parts worth copying.
 
 ## Setup
 
@@ -221,9 +221,11 @@ is the usual source of "it worked, then the numbers were garbage".
 ## Reading the result
 
 `bytes` is a FlatBuffers `SweepResultSet` (see
-[python-integration.md](python-integration.md) for the object graph). To read it
-from .NET you need the generated FlatBuffers classes for the same schema version.
-If you only need numbers in a file, skip the parsing entirely:
+[python-integration.md](python-integration.md) for the object graph). The generated
+classes that read it are in `csharp/`: they target .NET Standard 2.0, and
+`examples/vb-il-sweep/` parses the payload with them. Use the classes that ship
+with the same release as the DLL, because the schema version travels with it. If
+you only need numbers in a file, skip the parsing entirely:
 
 ```csharp
 Native.ExportReferenceDataTo(nintPath("C:\\measurements"), nintPath("ILReference"));

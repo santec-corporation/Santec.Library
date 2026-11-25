@@ -47,6 +47,10 @@ SDK_LIBRARY = [
 IMPORT_LIBRARY = "lib/win-x64/Santec.Library.lib"
 PYTHON_PACKAGE = ["python/santec_library", "python/Santec"]
 
+#: Examples that reference the generated bindings in ``csharp/``, so their archive
+#: has to carry that directory as well.
+MANAGED_WITH_BINDINGS = {"vb-il-sweep"}
+
 
 @dataclass
 class Example:
@@ -120,11 +124,15 @@ def managed_example(root: Path, directory: Path, version: str) -> Example:
         raise SystemExit(f"{directory} has no .csproj or .vbproj")
     members = files_under(root, directory.relative_to(root).as_posix())
     members += sdk_library(root, SDK_LIBRARY)
+    if directory.name in MANAGED_WITH_BINDINGS:
+        members += files_under(root, "csharp")
+    bindings = ("  csharp/                      the generated FlatBuffers bindings\n"
+                if directory.name in MANAGED_WITH_BINDINGS else "")
     readme = f"""Santec.Library {version} - .NET example: {directory.name}
 
   examples/{directory.name}/   the example (open {project.name})
   lib/win-x64/                 Santec.Library.dll, LICENSE.txt, versions.json
-
+{bindings}
 Run it from this folder:
 
   dotnet run --project examples\\{directory.name}\\{project.name} -- --help

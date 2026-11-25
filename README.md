@@ -11,7 +11,7 @@ C++, C#, VB.NET and Python.
 | `Santec.Library.so` (linux-x64) | `lib/linux-x64/` |
 | C and C++ declarations | `include/SantecLibrary.h`, `include/SantecLibrary.hpp` |
 | Entry-point reference (generated from the header) | `docs/abi-reference.md` |
-| Examples | `examples/cpp/`, `examples/csharp/`, `examples/vb/`, and the Python scripts in `python/` |
+| Examples | `examples/cpp/`, `examples/csharp/`, `examples/vb/`, `examples/vb-il-sweep/`, and the Python scripts in `python/` |
 | Python bindings and FlatBuffers result types | `python/` |
 | Version, build commit and file hashes | `lib/<platform>/versions.json` |
 
@@ -121,6 +121,10 @@ private static partial int GetDeviceNum();
 [LibraryImport("Santec.Library", EntryPoint = "GetDevices")]
 private static partial int GetDevices(nint devices, int capacity);
 ```
+
+`csharp/` holds the generated classes for the scan payloads; they target .NET
+Standard 2.0, and `examples/vb-il-sweep/` runs a sweep and reads the result with
+them.
 
 ### Python
 
