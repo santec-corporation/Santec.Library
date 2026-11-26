@@ -87,6 +87,10 @@ The declarations above are `internal` so that the examples below can call them
 from another class. If your public wrapper methods live in the same type, make
 them `private` instead, the generated stubs work either way.
 
+3. Reference the result bindings when you read a scan payload. `csharp/` holds the
+   generated classes for the FlatBuffers payloads, and `examples/vb-il-sweep/` shows
+   the project reference that pulls in `Google.FlatBuffers` with them.
+
 ## VB.NET
 
 `examples/vb/` runs the same sample in VB.NET. Four language rules change the
@@ -111,6 +115,17 @@ target. `Declare` takes a string literal for `Lib`, so a constant only works wit
 `Marshal.AllocHGlobal` and free it in a `Finally`. VB has no pointer types either, so
 `GetTSL2PowerLoggingData(double** data, int* length)` takes `ByRef data As IntPtr,
 ByRef length As Integer`, and `Marshal.Copy` moves the samples out.
+
+`Marshal.PtrToStringUTF8` arrived in .NET Core 3.0. `Native.FromUtf8` decodes the
+version and validation strings itself under `#If NETFRAMEWORK Or NETSTANDARD`, so
+the same declarations build for a .NET Framework consumer of the bindings.
+
+On .NET Framework, name the file with its extension: `DllImport("Santec.Library.dll")`.
+A name that already contains a dot reaches the loader as written, so `Santec.Library`
+does not resolve and the call fails with `MOD_NOT_FOUND`, or with `E_ACCESSDENIED`
+when a directory of that name is in the search path. Both examples target `net10.0`,
+and `net48` on Windows, choosing the name with `#If NETFRAMEWORK`; both targets build
+as x64 because the native library is x64 only.
 
 ## ConnectionConfig
 
@@ -179,6 +194,9 @@ try
 }
 finally
 {
+    // StructureToPtr allocated a copy of each string. DestroyStructure releases
+    // those copies, so FreeHGlobal alone does not leak them once per connection.
+    Marshal.DestroyStructure(tslPtr, typeof(ConnectionConfig));
     Marshal.FreeHGlobal(tslPtr);
 }
 ```
@@ -224,8 +242,21 @@ is the usual source of "it worked, then the numbers were garbage".
 [python-integration.md](python-integration.md) for the object graph). The generated
 classes that read it are in `csharp/`: they target .NET Standard 2.0, and
 `examples/vb-il-sweep/` parses the payload with them. Use the classes that ship
-with the same release as the DLL, because the schema version travels with it. If
-you only need numbers in a file, skip the parsing entirely:
+with the same release as the DLL, because the schema version travels with it.
+
+Two rules apply to every payload:
+
+- **Compare `ResultsType` before reading a union member.** The accessors do not
+  check the tag: `Results<T>()` reinterprets the table the union holds, and
+  `ILResult` and `ILReferenceResult` overlap field for field, so reading a
+  measurement entry as a reference returns the measurement's power vector as the
+  reference power. `ResultsAsILResult()` throws on a mismatch instead.
+- **Read the unit fields.** `WavelengthUnit` is 0 for picometres and 1 for
+  nanometres; `PowerUnit` is 0 for dBm and 1 for dBW. Do not cast either field
+  through an enum of the same name from the parameter layer: that one treats 0 as
+  unknown and numbers pm and dBm as 2 and 3.
+
+If you only need numbers in a file, skip the parsing entirely:
 
 ```csharp
 Native.ExportReferenceDataTo(nintPath("C:\\measurements"), nintPath("ILReference"));

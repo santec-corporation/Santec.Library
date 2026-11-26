@@ -232,8 +232,8 @@ for i in range(result_set.ResultsLength()):
         reference = ILReferenceResult()
         reference.Init(entry.Results().Bytes, entry.Results().Pos)
 
-        wavelength = reference.WavelengthAsNumpy()          # nm
-        power = reference.Data().PowerAsNumpy()             # dBm
+        wavelength = reference.WavelengthAsNumpy()          # in the payload's unit
+        power = reference.Data().PowerAsNumpy()             # in the payload's unit
         monitor = reference.Data().PowerMonitorAsNumpy()
 
     elif entry.ResultsType() == SweepResult().ILResult:
@@ -251,6 +251,10 @@ for i in range(result_set.ResultsLength()):
 
 `SweepResult().ILReferenceResult` and `.ILResult` are the flatbuffers union type
 tags: compare against them, do not construct them.
+
+`WavelengthUnit()` on a result and `PowerUnit()` on its data name the unit of each
+vector: 0 pm or 1 nm, and 0 dBm or 1 dBW. Read them and label the arrays with them
+rather than assuming nm and dBm; a picometre sweep stores picometres.
 
 The `...AsNumpy()` helpers return numpy arrays; every one has a plain
 `...Length()` / `... (index)` accessor if you would rather avoid the dependency.

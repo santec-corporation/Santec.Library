@@ -33,6 +33,11 @@ ROOT = Path(__file__).resolve().parent.parent
 #: A release version, optionally labelled with the build (1.8.0.10+linux.1).
 VERSION = re.compile(r"^\d+(?:\.\d+){1,3}(?:\+[0-9A-Za-z][0-9A-Za-z.-]*)?$")
 
+#: The frameworks a project declares. A project with more than one cannot be run
+#: without `--framework`, so the generated command names the first. The declaration
+#: may be conditioned on the platform, so every match is read.
+TARGET_FRAMEWORKS = re.compile(r"<TargetFrameworks[^>]*>([^<]+)</TargetFrameworks>")
+
 #: Build residue that must never travel. examples/csharp/ has a committed obj/
 #: directory, and anybody who built an example has more.
 EXCLUDED_DIRS = {".git", ".vs", "bin", "obj", "x64", "__pycache__"}
@@ -128,6 +133,17 @@ def managed_example(root: Path, directory: Path, version: str) -> Example:
         members += files_under(root, "csharp")
     bindings = ("  csharp/                      the generated FlatBuffers bindings\n"
                 if directory.name in MANAGED_WITH_BINDINGS else "")
+    frameworks = []
+    for declared in TARGET_FRAMEWORKS.findall(project.read_text(encoding="utf-8")):
+        for part in declared.split(";"):
+            part = part.strip()
+            if part and part not in frameworks:
+                frameworks.append(part)
+    framework_flag = f" --framework {frameworks[0]}" if frameworks else ""
+    frameworks_note = ""
+    if len(frameworks) > 1:
+        frameworks_note = (f"\nThe project also targets {', '.join(frameworks[1:])}. Pass\n"
+                           f"--framework <tfm> to build and run another one.\n")
     readme = f"""Santec.Library {version} - .NET example: {directory.name}
 
   examples/{directory.name}/   the example (open {project.name})
@@ -135,11 +151,11 @@ def managed_example(root: Path, directory: Path, version: str) -> Example:
 {bindings}
 Run it from this folder:
 
-  dotnet run --project examples\\{directory.name}\\{project.name} -- --help
+  dotnet run --project examples\\{directory.name}\\{project.name}{framework_flag} -- --help
 
 The project copies ..\\..\\lib\\win-x64\\Santec.Library.dll next to the executable,
 which is the path it has inside this archive.
-"""
+{frameworks_note}"""
     return Example(slug=f"{directory.name}-sample", members=members, readme=readme)
 
 

@@ -102,7 +102,17 @@ internal static partial class Native
     {
         var devicePtr = ConvertConnectionConfigToPtr(device);
 
-        return SetConnection(devicePtr);
+        try
+        {
+            return SetConnection(devicePtr);
+        }
+        finally
+        {
+            // StructureToPtr allocated a copy of each string. The library copied the
+            // fields during the call, so release the copies and then the block.
+            Marshal.DestroyStructure(devicePtr, typeof(ConnectionConfig));
+            Marshal.FreeHGlobal(devicePtr);
+        }
     }
 
     /// <summary>
