@@ -19,7 +19,15 @@ End Structure
 '''     declarations use <c>DllImport</c>.
 ''' </summary>
 Friend Module Native
+#If NETFRAMEWORK Then
+    ' The .NET Framework loader does not append ".dll" to a name that already
+    ' contains a dot, and this target runs on Windows only.
+    Private Const LibraryName As String = "Santec.Library.dll"
+#Else
+    ' .NET appends the platform's extension, so the bare name resolves
+    ' Santec.Library.dll on Windows and Santec.Library.so on Linux.
     Private Const LibraryName As String = "Santec.Library"
+#End If
 
     <DllImport(LibraryName, EntryPoint:="GetLibraryVersion")>
     Friend Function GetLibraryVersion() As IntPtr
@@ -92,6 +100,10 @@ Friend Module Native
             Marshal.StructureToPtr(powerMeter, meterPtr, False)
             Return SetConnections(tslPtr, meterPtr, IntPtr.Zero, IntPtr.Zero)
         Finally
+            ' StructureToPtr allocated a copy of each string. The library copied the
+            ' fields during the call, so release the copies and then the blocks.
+            Marshal.DestroyStructure(tslPtr, GetType(ConnectionConfig))
+            Marshal.DestroyStructure(meterPtr, GetType(ConnectionConfig))
             Marshal.FreeHGlobal(meterPtr)
             Marshal.FreeHGlobal(tslPtr)
         End Try
@@ -130,10 +142,34 @@ Friend Module Native
         If pointer = IntPtr.Zero Then Return ""
 
         Try
-            Return If(Marshal.PtrToStringUTF8(pointer), "")
+            Return FromUtf8(pointer)
         Finally
             FreeString(pointer)
         End Try
+    End Function
+
+    ''' <summary>
+    '''     Decodes a UTF-8 string the library allocated. <c>PtrToStringUTF8</c> arrived in
+    '''     .NET Core 3.0, so projects on .NET Framework or .NET Standard decode the bytes
+    '''     themselves.
+    ''' </summary>
+    Friend Function FromUtf8(pointer As IntPtr) As String
+        If pointer = IntPtr.Zero Then Return ""
+
+#If NETFRAMEWORK Or NETSTANDARD Then
+        Dim length = 0
+        While Marshal.ReadByte(pointer, length) <> 0
+            length += 1
+        End While
+
+        If length = 0 Then Return ""
+
+        Dim bytes(length - 1) As Byte
+        Marshal.Copy(pointer, bytes, 0, length)
+        Return System.Text.Encoding.UTF8.GetString(bytes)
+#Else
+        Return Marshal.PtrToStringUTF8(pointer)
+#End If
     End Function
 
     ''' <summary>

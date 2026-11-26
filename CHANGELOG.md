@@ -31,11 +31,45 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   export directory.
 - The Python package resolves the platform's file name and `lib/<rid>`, so `Library()`
   finds the shared object in `lib/linux-x64` the way it finds the DLL in `lib/win-x64`.
+- `examples/vb-il-sweep/` reports the reference `Data` table as well, so the example
+  shows the whole payload rather than a point count: `power` and `power_monitor` with
+  their units, and `polarization`. The vectors are labelled with the unit the payload
+  declares, `WavelengthUnit` and `PowerUnit`, instead of nm and dB unconditionally.
 
 ### Changed
 
 - `verify.yml` gains a Linux job that checks the committed object when the checkout
   carries one, and reports that there is nothing to check when it does not.
+- The VB examples decode the library's UTF-8 strings through `Native.FromUtf8`, which
+  calls `Marshal.PtrToStringUTF8` on modern .NET and copies the bytes under
+  `#If NETFRAMEWORK Or NETSTANDARD`. `PtrToStringUTF8` arrived in .NET Core 3.0, so a
+  .NET Framework consumer of `csharp/` needs the fallback.
+- `examples/vb/` and `examples/vb-il-sweep/` target `net10.0`, and `net48` on Windows,
+  build as x64, and pick the `DllImport` name with `#If NETFRAMEWORK`: the Framework
+  loader does not append `.dll` to a name that already contains a dot, so the bare
+  name only resolves on .NET. The README commands pass `--framework net10.0`, which
+  `dotnet run` requires where the project has more than one framework.
+- `tools/package_examples.py` writes `--framework` into the generated run command when
+  a project declares more than one target framework.
+- `docs/dotnet-integration.md` gains the result-binding step, the union tag rule, the
+  unit fields, the `DestroyStructure` release call, and the `DllImport` name rule for
+  .NET Framework: a name that already contains a dot reaches the loader as written, so
+  a Framework caller writes `Santec.Library.dll`.
+- `docs/python-integration.md` and `csharp/README.md` document the unit fields:
+  `WavelengthUnit` is 0 for pm and 1 for nm, `PowerUnit` is 0 for dBm and 1 for dBW,
+  and an enum of the same name from the parameter layer does not carry those values.
+
+### Fixed
+
+- `examples/csharp/`: `Connect()` releases the `ConnectionConfig` block it allocates
+  and the string copies inside it. Both leaked on every connection.
+- `examples/vb/` and `examples/vb-il-sweep/`: `Connect()` releases the string copies
+  `Marshal.StructureToPtr` allocates before it frees the block, which leaked one set
+  of strings per call.
+- `examples/vb-il-sweep/`: compares `SweepResultEntry.ResultsType` before reading a
+  union member. The generated accessors do not check the tag and `ILResult` and
+  `ILReferenceResult` overlap field for field, so a measurement read as a reference
+  returned the measurement's power vector as the reference power without failing.
 
 ## [1.8.0.9] - 2026-11-19
 

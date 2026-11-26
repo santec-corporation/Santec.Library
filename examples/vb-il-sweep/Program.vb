@@ -1,5 +1,4 @@
 Imports System
-Imports System.Runtime.InteropServices
 Imports Microsoft.VisualBasic
 
 Module Program
@@ -119,7 +118,7 @@ Module Program
         If value = IntPtr.Zero Then Return
 
         Try
-            Console.WriteLine($"Santec.Library {Marshal.PtrToStringUTF8(value)}")
+            Console.WriteLine($"Santec.Library {Native.FromUtf8(value)}")
         Finally
             Native.FreeString(value)
         End Try

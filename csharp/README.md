@@ -46,6 +46,29 @@ for (var i = 0; i < set.ResultsLength; i++)
 `docs/dotnet-integration.md` in the public repository, and `docs/abi-reference.md`
 lists every entry point and which call frees what.
 
+The tag check in that loop is load-bearing. `ResultsAsILResult()` and the generated
+`Results<T>()` do not compare `ResultsType`: `Results<T>()` reinterprets whatever
+table the union holds, and the result tables overlap field for field, so reading a
+measurement entry as a reference returns the measurement's power vector as the
+reference power. `ResultsAsILResult()` throws on a mismatch instead. Neither is a
+substitute for the switch.
+
+## Units
+
+`WavelengthUnit` and `PowerUnit` name the unit of the vector beside them, and the
+payload stores them as plain integers:
+
+| Field | 0 | 1 |
+|---|---|---|
+| `ILResult.WavelengthUnit`, `ILReferenceResult.WavelengthUnit` | pm | nm |
+| `SweepData.PowerUnit`, `ILSweepData.PowerUnit` | dBm | dBW |
+
+They are `WavelengthUnit` and `PowerLevelUnit`, the enums the managed result types
+use. Read the field rather than casting it through an enum of the same name from the
+instrument-parameter layer: that one numbers pm and dBm as 2 and 3 and treats 0 as
+unknown, so a payload read through it mislabels a picometre sweep as unknown and a
+dBm vector as mW.
+
 ## Regenerate
 
 `Santec/` is wholly generated. Do not edit it: a run deletes whatever the current
