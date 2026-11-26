@@ -10,6 +10,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `tests/check_changelog.py`: fails when `lib/<platform>/versions.json` names a
+  version with no `## [<version>] - <date>` section, when a heading is missing its
+  date, repeated or out of order, or when a section carries no text. `verify.yml` runs
+  it after the bundle check.
 - `examples/vb-il-sweep/` reports the reference `Data` table as well, so the example
   shows the whole payload rather than a point count: `power` and `power_monitor` with
   their units, and `polarization`. The vectors are labelled with the unit the payload

@@ -40,6 +40,12 @@ jobs:
     - name: Check the bundle
       run: python tests/check_bundle.py --platform win-x64
 
+    # versions.json names the release the bundle carries, and the changelog has to
+    # carry a matching section: the check fails when a manifest version has no
+    # '## [<version>] - <date>' heading.
+    - name: Check the changelog
+      run: python tests/check_changelog.py
+
     - name: Install the Python package
       run: python -m pip install "./python[numpy]"
 
